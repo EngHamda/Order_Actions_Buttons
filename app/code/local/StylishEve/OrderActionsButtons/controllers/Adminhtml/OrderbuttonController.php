@@ -193,7 +193,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
      * - get order & change it status
      * - redirect to last page:ex. admin/sales_order/view/order_id/xxx
      */
-    public function changeOrderStatusAction()
+    public function changeStatusAction()
     {
         try {
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
@@ -215,6 +215,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                         Mage::helper("adminhtml")->__("No Orders with status " . $currentStatus)
                     );
                     $this->_redirect($redirectUrl, $redirectData);
+                    return ;
                 }
                 foreach ($_orders as $_order) {
                     $_order->setStatus($tobeStatus);
@@ -226,7 +227,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
 
         } catch (Exception $e) {
             Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
-                ['exceptionObj'=>$e, 'className'=>'StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController', 'methodName'=>'changeOrderStatusAction']
+                ['exceptionObj'=>$e, 'className'=>'StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController', 'methodName'=>'changeStatusAction']
             );
         }
     }

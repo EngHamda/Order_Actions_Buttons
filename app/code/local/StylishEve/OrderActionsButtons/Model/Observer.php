@@ -69,7 +69,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
                         'label' => Mage::helper('core')->__($buttonData->getName()),
                         'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
                         // 'onclick' => "window.open('{$block->getUrl(
-							'admin_orderactionsbuttons/adminhtml_orderbutton/changeorderstatus', 
+							'admin_orderactionsbuttons/adminhtml_orderbutton/changestatus', 
 							[
 								'order_id' => $orderId, 
 								'order_current_status' => $buttonData->getOrderCurrentStatus(), 
@@ -87,7 +87,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
                     //check if action_type is change status OR generate report
                     switch ($buttonData->getActionType()):
                         case $actionTypeArray['Change Status For Grid Page']:
-                            $urlAction = 'changeorderstatus';
+                            $urlAction = 'changestatus';
                             $requestData['order_tobe_status'] = $buttonData->getOrderTobeStatus();
                             break;
                         case $actionTypeArray['Generate Report']:
