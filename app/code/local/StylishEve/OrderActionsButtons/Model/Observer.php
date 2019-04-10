@@ -64,9 +64,11 @@ class StylishEve_OrderActionsButtons_Model_Observer
         foreach ($orderActionsData as $buttonData) {
             if ($page_type == 'view') {
                 if (in_array($order->getStatus(), explode(",", $buttonData->getOrderCurrentStatus())) && in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
+                    $message = Mage::helper('core')->__('Are you sure you want to change order status to '.$buttonData->getOrderTobeStatus().'?');
                     $block->addButton('btn_' . $buttonData->getName(), array(
                         'label' => Mage::helper('core')->__($buttonData->getName()),
-                        'onclick' => "window.open('{$block->getUrl(
+                        'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
+                        // 'onclick' => "window.open('{$block->getUrl(
 							'admin_orderactionsbuttons/adminhtml_orderbutton/changeorderstatus', 
 							[
 								'order_id' => $orderId, 
