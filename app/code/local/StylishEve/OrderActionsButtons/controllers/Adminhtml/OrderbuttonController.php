@@ -92,9 +92,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 $post_data['accepted_role'] = implode(",", $post_data['accepted_role']);
                 if(array_key_exists('order_removed_buttons', $post_data)){
                     $post_data['order_removed_buttons'] = implode(",", $post_data['order_removed_buttons']);
-                    //if(!Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
-                        //unset($post_data['check_opening_tickets']);
-                    //}
                     if(!array_key_exists('check_opening_tickets', $post_data)){
                         $post_data['check_opening_tickets']= '0';
                     }

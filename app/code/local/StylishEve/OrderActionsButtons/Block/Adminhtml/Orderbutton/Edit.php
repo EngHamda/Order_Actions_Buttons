@@ -31,7 +31,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                     //select input start with '',string
 //                                    if('1'==$('#check_opening_tickets').val()){
 //                                        $('#check_opening_tickets').attr('checked', 'checked');
-//                                    }                                    
+//                                    }
                                     
                                     var action_types = ".json_encode(StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray()).";
                                     var action_types_values = Object.values(action_types);

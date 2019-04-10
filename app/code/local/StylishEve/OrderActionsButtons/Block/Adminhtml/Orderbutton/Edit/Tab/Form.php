@@ -72,18 +72,15 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
                 "container_id" =>"order-removed-buttons-container",
             ));
 
-            //check if module is enabled add input field
-            if(!Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
-                $model  = Mage::registry('orderbutton_data');
-                $fieldset->addField('check_opening_tickets', 'checkbox', array(
-                    "label"         => Mage::helper('orderactionsbuttons')->__('Check Any Opening Tickets?'),
-                    "onclick"       => "this.value = this.checked ? 1 : 0;",
-                    "name"          => "check_opening_tickets",
-                    "container_id"  => "order-check-tickets-container",
-                    "checked"       => $model->getCheckOpeningTickets(),//!empty("this.value")?true:false,
-                    //"checked"       => "1 == this.value ? '' : '';",
-                ));
-            }
+            $model  = Mage::registry('orderbutton_data');
+            $fieldset->addField('check_opening_tickets', 'checkbox', array(
+                "label"         => Mage::helper('orderactionsbuttons')->__('Check Any Opening Tickets?'),
+                "onclick"       => "this.value = this.checked ? 1 : 0;",
+                "name"          => "check_opening_tickets",
+                "container_id"  => "order-check-tickets-container",
+                "checked"       => $model->getCheckOpeningTickets(),//!empty("this.value")?true:false,
+                //"checked"       => "1 == this.value ? '' : '';",
+            ));
 
         if (Mage::getSingleton("adminhtml/session")->getOrderbuttonData()) {
             $form->setValues(Mage::getSingleton("adminhtml/session")->getOrderbuttonData());

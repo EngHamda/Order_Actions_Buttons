@@ -24,8 +24,8 @@ class StylishEve_OrderActionsButtons_Model_Observer
         try{
             $block = $observer->getBlock();
             if ($block instanceof Mage_Adminhtml_Block_Sales_Order_View) {
-                $this->removeButtons( $block, array('RemoveButtonsFromView'), 'view');
                 $this->displayButtons($block, array('ChangeStatusForView'), 'view');
+                $this->removeButtons( $block, array('RemoveButtonsFromView'), 'view');
             } elseif ($block instanceof Mage_Adminhtml_Block_Sales_Order) {
                 $this->displayButtons($block, array('ChangeStatusForGrid', 'GenerateReportForGrid'), 'grid');
             }//endIf check Block
@@ -151,14 +151,8 @@ class StylishEve_OrderActionsButtons_Model_Observer
             return false;
         }//endIF
         //check IF order has ticket
-        if(Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
-            $orderId = $block->getOrder()->getEntityId();
-            $helpdeskModel = Mage::getSingleton('helpdesk/ticket')->getCollection();
-            $helpdeskModel->addFieldToFilter('order_id', array('eq' => $orderId));
-            $helpdeskModel->addFieldToFilter('status_id', 1);//code is open, //getStatus()->getCode()
-            $orderHasOpenTicket = ($helpdeskModel->getSize() == 0)?false:true;
-
-        }
+        $orderId = $block->getOrder()->getEntityId();
+        $orderHasOpenTicket = $this->_orderHasOpenTicket($orderId);
         foreach ($orderActionsData as $buttonData) {
             $checkTickets = ( !empty($buttonData->getCheckOpeningTickets()) )?true:false;
             if(!$checkTickets || ($checkTickets&&$orderHasOpenTicket) ){
@@ -172,5 +166,19 @@ class StylishEve_OrderActionsButtons_Model_Observer
                 }
             }//endIF
         }//endForeach
+    }
+
+    /**
+     *
+     * check IF order has ticket
+     *
+     */
+    public function _orderHasOpenTicket($pOrderId)
+    {
+        $helpdeskModel = Mage::getSingleton('helpdesk/ticket')->getCollection();
+        $helpdeskModel->addFieldToFilter('order_id', array('eq' => $pOrderId));
+        $helpdeskModel->addFieldToFilter('status_id', 1);//code is open, //getStatus()->getCode()
+        $orderHasOpenTicket = ($helpdeskModel->getSize() == 0)?false:true;
+        return $orderHasOpenTicket;
     }
 }
