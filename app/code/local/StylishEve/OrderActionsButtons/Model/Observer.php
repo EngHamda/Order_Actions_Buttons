@@ -103,34 +103,6 @@ class StylishEve_OrderActionsButtons_Model_Observer
         }//endForeach
     }
 
-    public function displayButtonsInOrderGrid(&$block)
-    {
-        $role_name = $this->getUserRole();
-        $orderActionsData = Mage::getSingleton('orderactionsbuttons/orderbutton')->getCollection();
-        $actionTypeArray = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
-        foreach ($orderActionsData as $buttonData) {
-            if (in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
-                $requestData = ['order_current_status' => $buttonData->getorderCurrentStatus()];
-                $urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
-                //check if action_type is change status OR generate report
-                switch ($buttonData->getActionType()):
-                    case $actionTypeArray['Change Status For Grid Page']:
-                        $urlAction = 'changeorderstatus';
-                        $requestData['order_tobe_status'] = $buttonData->getOrderTobeStatus();
-                        break;
-                    case $actionTypeArray['Generate Report']:
-                        $urlAction = 'generatereport';
-                        break;
-                endswitch;
-                $block->addButton('btn_' . $buttonData->getName(), array(
-                    'label' => Mage::helper('core')->__($buttonData->getName()),
-                    'onclick' => "window.open('{$block->getUrl($urlRequest.$urlAction, $requestData)}');",
-                    'class' => $buttonData->getCssClasses(),//change color and change icon
-                ));
-            }//endIF
-        }//endForeach
-    }
-
     /**
      * Notes:
      *  - to get btn id ===> id form $block->(protected)_buttons[$level][$id]"sourceCode"
