@@ -198,12 +198,18 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         try {
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
             $currentStatus = $this->getRequest()->getParam('order_current_status');
+            $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
+                ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])
+                ->getFirstItem()->getLabel();
             $orderId = $this->getRequest()->getParam('order_id');
             $redirectUrl = 'adminhtml/sales_order/';
             $redirectData = [];
             if (!is_null($orderId)) {
                 $orderObj = Mage::getModel('sales/order')->load($orderId);
                 $orderObj->setStatus($tobeStatus);
+                $userName = $this->_getUserName();
+                $history = $orderObj->addStatusHistoryComment($userName . " has changed status to $tobeStatusName.", false);
+                $history->setIsCustomerNotified(false);
                 $orderObj->save();
                 $redirectUrl = $redirectUrl . 'view';
                 $redirectData['order_id'] = $orderId;
@@ -212,7 +218,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 $_orders = mage::getModel('sales/order')->getCollection()->addFieldToFilter('status', array('in' => $_current_statuses));
                 if ($_orders->getSize() == 0) {
                     Mage::getSingleton("adminhtml/session")->addSuccess(
-                        Mage::helper("adminhtml")->__("No Orders with status " . $currentStatus)
+                        Mage::helper("adminhtml")->__("No Orders need to change status")
                     );
                     $this->_redirect($redirectUrl, $redirectData);
                     return ;
@@ -226,6 +232,12 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             $this->_redirect($redirectUrl, $redirectData);
 
         } catch (Exception $e) {
+            Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__("Failed changing order/s status"));
+            Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
+                ['exceptionObj'=>$e, 'className'=>'StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController', 'methodName'=>'changeStatusAction']
+            );
+        } catch (Mage_Core_Exception $e) {
+            Mage::getSingleton("adminhtml/session")->addError($e->getMessage());
             Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
                 ['exceptionObj'=>$e, 'className'=>'StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController', 'methodName'=>'changeStatusAction']
             );
@@ -269,5 +281,18 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 ['exceptionObj'=>$e, 'className'=>'StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController', 'methodName'=>'generateReportAction']
             );
         }
+    }
+
+    /**
+     * get User Name
+     */
+    public function _getUserName()
+    {
+        $admin_user_session = Mage::getSingleton('admin/session');
+        $userUsername = $admin_user_session->getUser()->getUsername();
+        $userFirstname = $admin_user_session->getUser()->getFirstname();
+        $userLastname = $admin_user_session->getUser()->getLastname();
+
+        return $userFirstname .' '. $userLastname . ' ('. $userUsername .')';
     }
 }
