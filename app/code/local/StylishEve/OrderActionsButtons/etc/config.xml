@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<config>
+  <modules>
+    <StylishEve_OrderActionsButtons>
+      <version>0.1.5</version>
+    </StylishEve_OrderActionsButtons>
+  </modules>
+  <global>
+    <helpers>
+      <orderactionsbuttons>
+        <class>StylishEve_OrderActionsButtons_Helper</class>
+      </orderactionsbuttons>
+    </helpers>
+		<blocks>
+			<orderactionsbuttons>
+			<class>StylishEve_OrderActionsButtons_Block</class>
+			</orderactionsbuttons>
+		</blocks>
+		<models>
+			<orderactionsbuttons>
+			<class>StylishEve_OrderActionsButtons_Model</class>
+			<resourceModel>orderactionsbuttons_mysql4</resourceModel>
+			</orderactionsbuttons>
+			<orderactionsbuttons_mysql4>
+			<class>StylishEve_OrderActionsButtons_Model_Mysql4</class>
+			<entities>		  
+					<orderbutton>
+					<table>order_button</table>
+					</orderbutton>
+					</entities>
+			</orderactionsbuttons_mysql4>
+		</models>
+		<!-- 1-start -->
+		<events>
+			<adminhtml_block_html_before> <!-- added by me as event before render html, identifier of the event we want to catch -->
+					<observers>
+						<add_order_actions_buttons_handler> <!-- identifier of the event handler -->
+							<type>singleton</type> <!-- class method call type; valid are model, object and singleton -->
+							<class>orderactionsbuttons/observer</class> <!-- observers class alias -->
+							<method>AddOrRemoveOrderActionsButton</method>  <!-- observer's method to be called -->
+							<args></args> <!-- additional arguments passed to observer -->
+						</add_order_actions_buttons_handler>
+					</observers>
+			</adminhtml_block_html_before>
+		</events>
+		<!-- 1-end -->
+		<resources>
+			<orderactionsbuttons_setup>
+			<setup>
+				<module>StylishEve_OrderActionsButtons</module>
+			</setup>
+			<connection>
+				<use>core_setup</use>
+			</connection>
+			</orderactionsbuttons_setup>
+			<orderactionsbuttons_write>
+			<connection>
+				<use>core_write</use>
+			</connection>
+			</orderactionsbuttons_write>
+			<orderactionsbuttons_read>
+			<connection>
+				<use>core_read</use>
+			</connection>
+			</orderactionsbuttons_read>
+		</resources>
+  </global>
+  <admin>
+		<routers>
+			<orderactionsbuttons>
+				<use>admin</use>
+			<args>
+				<module>StylishEve_OrderActionsButtons</module>
+				<frontName>admin_orderactionsbuttons</frontName>
+			</args>
+			</orderactionsbuttons>
+		</routers>
+  </admin>
+  <adminhtml>
+	<menu>
+	  <orderactionsbuttons module="orderactionsbuttons">
+		<title>OrderActionsButtons</title>
+		<sort_order>100</sort_order>
+		<children>
+		  <orderbutton module="orderactionsbuttons">
+		    <title>Manage Orderbutton</title>
+			<sort_order>0</sort_order>
+			<action>admin_orderactionsbuttons/adminhtml_orderbutton</action>
+		  </orderbutton>
+		</children>
+	  </orderactionsbuttons>
+	</menu>
+	<acl>
+	  <resources>
+		<all>
+		  <title>Allow Everything</title>
+		</all>
+		<admin>
+		  <children>
+			<orderactionsbuttons translate="title" module="orderactionsbuttons">
+			  <title>OrderActionsButtons</title>
+			  <sort_order>1000</sort_order>
+			  <children>
+		  	<orderbutton translate="title">
+					<title>Manage Orderbutton</title>
+					<sort_order>0</sort_order>
+		  	</orderbutton>
+			  </children>
+			</orderactionsbuttons>
+		  </children>
+		</admin>
+	  </resources>
+	</acl>
+	<layout>
+	  <updates>
+		<orderactionsbuttons>
+		  <file>orderactionsbuttons.xml</file>
+		</orderactionsbuttons>
+	  </updates>
+	</layout>
+  </adminhtml>
+</config> 

@@ -1,0 +1,17 @@
+<h2>Processing</h2>
+
+<table>
+  <tr>
+    <th>SKU</th>
+    <th>Quantity</th>
+  </tr>
+  <?php
+  foreach($this->getItem() as $sku => $qty ){
+      echo  "<tr>".
+                "<td>".$sku."</td>".
+                "<td>".$qty."</td>".
+            "</tr>";
+
+  }
+  ?>
+</Table>
