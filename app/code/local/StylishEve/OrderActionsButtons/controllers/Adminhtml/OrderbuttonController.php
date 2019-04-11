@@ -198,21 +198,31 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         try {
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
             $currentStatus = $this->getRequest()->getParam('order_current_status');
+            //check if "cash"==$currentStatus || completecashAction
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                 ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])
                 ->getFirstItem()->getLabel();
+            $userName = $this->_getUserName();
             $orderId = $this->getRequest()->getParam('order_id');
             $redirectUrl = 'adminhtml/sales_order/';
             $redirectData = [];
             if (!is_null($orderId)) {
+                $redirectUrl = $redirectUrl . 'view';
+                $redirectData['order_id'] = $orderId;
                 $orderObj = Mage::getModel('sales/order')->load($orderId);
+                //check if $tobeStatus is "back_to_stock"
+                if (in_array($tobeStatus, ["back_to_stock"])) {
+                    $hasRma = $this->_checkRmaProducts($orderObj, $orderId);
+                    if(!$hasRma){
+                        $this->_redirect($redirectUrl, $redirectData);
+                        return ;
+                    }
+                }//endIF
                 $orderObj->setStatus($tobeStatus);
-                $userName = $this->_getUserName();
                 $history = $orderObj->addStatusHistoryComment($userName . " has changed status to $tobeStatusName.", false);
                 $history->setIsCustomerNotified(false);
                 $orderObj->save();
-                $redirectUrl = $redirectUrl . 'view';
-                $redirectData['order_id'] = $orderId;
+
             } else {
                 $_current_statuses = explode(',', $currentStatus);
                 $_orders = mage::getModel('sales/order')->getCollection()->addFieldToFilter('status', array('in' => $_current_statuses));
@@ -225,10 +235,12 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 }
                 foreach ($_orders as $_order) {
                     $_order->setStatus($tobeStatus);
+                    $history = $_order->addStatusHistoryComment($userName . " has changed status to $tobeStatusName.", false);
+                    $history->setIsCustomerNotified(false);
                     $_order->save();
                 }
             }
-            Mage::getSingleton("adminhtml/session")->addSuccess(Mage::helper("adminhtml")->__("Orders updated Successfully"));
+            Mage::getSingleton("adminhtml/session")->addSuccess(Mage::helper("adminhtml")->__("Order/s updated Successfully"));
             $this->_redirect($redirectUrl, $redirectData);
 
         } catch (Exception $e) {
@@ -294,5 +306,37 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $userLastname = $admin_user_session->getUser()->getLastname();
 
         return $userFirstname .' '. $userLastname . ' ('. $userUsername .')';
+    }
+
+    /**
+     * check Rma Products
+     */
+    public function _checkRmaProducts(&$pOrderObj, $pOrderId)
+    {
+        $qtyOrdered = 0;
+        $rmaRecords = mage::getModel('ProductReturn/Rma')->getCollection();
+        $rmaRecords->addFieldToFilter('rma_order_id', $pOrderId);
+        $rmaRecords->addFieldToFilter('rma_status', 'complete');
+        $rmaRecords->getSelect()->reset(Zend_Db_Select::COLUMNS)->join(
+            ['rp' => 'rma_products'],
+            'rp.rp_rma_id = main_table.rma_id',
+            ['back_to_stock_qty' => "SUM(rp.rp_qty)"]
+        );
+        $rmaRecords->addFieldToFilter('rp.rp_action',"backToStock");
+        if($rmaRecords->count() == 0) {
+            Mage::getSingleton("adminhtml/session")->addError($this->__('No RMA Created.'));
+            return false;
+        }
+        $backToStockQty = intval($rmaRecords->getFirstItem()->getBackToStockQty());
+        foreach ($pOrderObj->getAllItems() as $item) {
+            if($item->getProductType() == "simple")
+                $qtyOrdered += $item->getQtyOrdered();
+        }
+        if($qtyOrdered != $backToStockQty) {
+            Mage::getSingleton("adminhtml/session")->addError($this->__('RMA\'s Quantity is not the same as quantity ordered.'));
+            return false;
+        } else{
+            return true;
+        }
     }
 }
