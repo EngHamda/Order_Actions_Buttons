@@ -198,6 +198,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         try {
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
             $currentStatus = $this->getRequest()->getParam('order_current_status');
+            //check if "cash"==$currentStatus || completecashAction
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                 ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])
                 ->getFirstItem()->getLabel();
@@ -208,11 +209,20 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             if (!is_null($orderId)) {
                 $redirectUrl = $redirectUrl . 'view';
                 $redirectData['order_id'] = $orderId;
-                $result = $this->_changeStatus($userName, $orderId, $currentStatus, $tobeStatus, $tobeStatusName);
-                if(!$result){
-                    $this->_redirect($redirectUrl, $redirectData);
-                    return ;
-                }
+                $orderObj = Mage::getModel('sales/order')->load($orderId);
+                //check if $tobeStatus is "back_to_stock"
+                if (in_array($tobeStatus, ["back_to_stock"])) {
+                    $hasRma = $this->_checkRmaProducts($orderObj, $orderId);
+                    if(!$hasRma){
+                        $this->_redirect($redirectUrl, $redirectData);
+                        return ;
+                    }
+                }//endIF
+                $orderObj->setStatus($tobeStatus);
+                $history = $orderObj->addStatusHistoryComment($userName . " has changed status to $tobeStatusName.", false);
+                $history->setIsCustomerNotified(false);
+                $orderObj->save();
+
             } else {
                 $_current_statuses = explode(',', $currentStatus);
                 $_orders = mage::getModel('sales/order')->getCollection()->addFieldToFilter('status', array('in' => $_current_statuses));
@@ -299,43 +309,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     }
 
     /**
-     *
-     */
-    public function _changeStatus($pUserName, $pOrderId, $pCurrentStatus, $pTobeStatus, $pTobeStatusName)
-    {
-        $orderObj = Mage::getModel('sales/order')->load($pOrderId);
-        //check if $pTobeStatus is "back_to_stock"
-        if (in_array($pTobeStatus, ["back_to_stock"])) {
-            $hasRma = $this->_checkRmaProducts($orderObj, $pOrderId);
-            if(!$hasRma){
-                return false;
-            }
-        }//endIF
-        //check if $currentStatus is "cash{paidAction}" OR "paid{completecashAction}"
-        if (in_array($pCurrentStatus, ["cash", "paid"])) {
-            $this->_handleInvoice($orderObj);
-            switch ($pCurrentStatus):
-                case "cash":
-                    if (!$this->_checkOrderHasItemWithoutSerial($orderObj)) {
-                        $this->_addShipmentToOrder($orderObj);
-                    }//endIF canShip
-                    break;
-                case "paid":
-                    if ($orderObj->canShip()) {
-                        $this->_addShipmentToOrder($orderObj);
-                    }//endIF canShip
-                    break;
-            endswitch;
-        } else{
-            $orderObj->setStatus($pTobeStatus);
-            $history = $orderObj->addStatusHistoryComment($pUserName . " has changed status to $pTobeStatusName.", false);
-            $history->setIsCustomerNotified(false);
-            $orderObj->save();
-        }//endIF
-        return true;
-    }
-
-    /**
      * check Rma Products
      */
     public function _checkRmaProducts(&$pOrderObj, $pOrderId)
@@ -365,66 +338,5 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         } else{
             return true;
         }
-    }
-
-    /**
-     *
-     */
-    public function _handleInvoice(&$pOrderObj)
-    {
-        if ($pOrderObj->canInvoice()) {
-            //START Handle Invoice
-            $invoice = Mage::getSingleton('sales/service_order', $pOrderObj)->prepareInvoice();
-            $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
-            $invoice->register();
-            $invoice->getOrder()->setCustomerNoteNotify(false);
-            $invoice->getOrder()->setIsInProcess(true);
-
-            $transactionSave = Mage::getModel('core/resource_transaction')
-                ->addObject($invoice)
-                ->addObject($invoice->getOrder());
-            $transactionSave->save();
-            //END Handle Invoice
-        }//endIF canInvoice
-    }
-
-    /**
-     *
-     */
-    public function _checkOrderHasItemWithoutSerial(&$pOrderObj)
-    {
-        $orderHasItemWithoutSerial = false;
-        foreach ($pOrderObj->getAllItems() as $item) {
-            $orderItem = $item;
-            $orderedQty = $orderItem->getQtyOrdered();
-            $itemId = $orderItem->getItemId();
-            $erpOrderItem = Mage::getSingleton('AdvancedStock/SalesFlatOrderItem')->load($itemId);
-            //Mage::getSingleton('core/resource')->getTableName('AdvancedStock/SalesFlatOrderItem'),
-            // TableName erp_sales_flat_order_item
-            if( count($erpOrderItem->getData())==0 || empty($erpOrderItem->getSerials()) || substr_count($erpOrderItem->getSerials(), "\n")+1<$orderedQty ){
-                $orderHasItemWithoutSerial = true;
-                Mage::getSingleton("adminhtml/session")->addError(
-                    Mage::helper("customization")->__("Cannot ship this order because the product %s has %s ordered quantity and error in serial.",$orderItem->getName(), $orderedQty)
-                );
-                //break;
-            }//endIF
-        }//end Foreach
-        return $orderHasItemWithoutSerial;
-    }
-
-    /**
-     *
-     */
-    public function _addShipmentToOrder(&$pOrderObj)
-    {
-        //START Handle Shipment
-        $shipment = $pOrderObj->prepareShipment();
-        $shipment->register();
-        $pOrderObj->setIsInProcess(true);
-        $transactionSave = Mage::getModel('core/resource_transaction')
-            ->addObject($shipment)
-            ->addObject($shipment->getOrder())
-            ->save();
-        //END Handle Shipment
     }
 }
