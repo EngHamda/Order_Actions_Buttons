@@ -61,6 +61,18 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                     var updateForm = function(_action,_actions){
                                         switch(_action) {
                                           case _actions['Change Status For View Page']:
+                                            
+                                            //show order-tobe-status-container if not has class required-entry
+                                            showContainer('order-tobe-status-container', 'order_tobe_status', spanElem);
+                                            
+                                            //hide order-removed-buttons-container if has class required-entry
+                                            hideContainer('order-removed-buttons-container', 'order_removed_buttons');
+                                            $('#order-check-tickets-container').hide();
+                                            
+                                            $('#order-check-warehouse-container').hide();
+                                            $('#order-check-delivery-date-container').hide();
+                                            
+                                            break;
                                           case _actions['Change Status For Grid Page']:
                                             
                                             //show order-tobe-status-container if not has class required-entry
@@ -69,6 +81,9 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             //hide order-removed-buttons-container if has class required-entry
                                             hideContainer('order-removed-buttons-container', 'order_removed_buttons');
                                             $('#order-check-tickets-container').hide();
+                                            
+                                            $('#order-check-warehouse-container').show();
+                                            $('#order-check-delivery-date-container').show();
                                             
                                             break;
                                           case _actions['Remove Buttons From View Page']:
@@ -80,8 +95,23 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             //hide order-tobe-status-container if has class required-entry
                                             hideContainer('order-tobe-status-container', 'order_tobe_status');
                                             
+                                            $('#order-check-warehouse-container').hide();
+                                            $('#order-check-delivery-date-container').hide();
+                                            
                                             break;
                                           case _actions['Generate Report']:
+                                          
+                                            //hide order-tobe-status-container if has class required-entry
+                                            hideContainer('order-tobe-status-container', 'order_tobe_status');
+                                            
+                                            //hide order-removed-buttons-container if has class required-entry
+                                            hideContainer('order-removed-buttons-container', 'order_removed_buttons');
+                                            $('#order-check-tickets-container').hide();
+                                            
+                                            $('#order-check-warehouse-container').show();
+                                            $('#order-check-delivery-date-container').show();
+                                            
+                                            break;
                                           default:
                                             
                                             //hide order-tobe-status-container if has class required-entry
@@ -91,7 +121,10 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             hideContainer('order-removed-buttons-container', 'order_removed_buttons');
                                             $('#order-check-tickets-container').hide();
                                             
-                                            break;                          
+                                            $('#order-check-warehouse-container').hide();
+                                            $('#order-check-delivery-date-container').hide();
+                                            
+                                            break;
                                         }//endSWITCH
                                     };//end updateForm
                                     

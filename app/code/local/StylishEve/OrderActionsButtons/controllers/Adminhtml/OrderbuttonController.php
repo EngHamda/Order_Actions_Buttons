@@ -100,6 +100,8 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                         unset($post_data['check_opening_tickets']);
                     }
                 }
+                $post_data['check_warehouse'] = (array_key_exists('check_warehouse', $post_data))?$post_data['check_warehouse']:'0';
+                $post_data['check_delivery_date'] = (array_key_exists('check_delivery_date', $post_data))?$post_data['check_delivery_date']:'0';
 
                 $model = Mage::getModel("orderactionsbuttons/orderbutton")
                     ->addData($post_data)
@@ -196,11 +198,11 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     public function changeStatusAction()
     {
         try {
+            $count = 1;
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
             $currentStatus = $this->getRequest()->getParam('order_current_status');
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
-                ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])
-                ->getFirstItem()->getLabel();
+                ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])->getFirstItem()->getLabel();
             $userName = $this->_getUserInfo()['userName'];
             $orderId = $this->getRequest()->getParam('order_id');
             $redirectUrl = 'adminhtml/sales_order/';
@@ -223,14 +225,16 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     $this->_redirect($redirectUrl, $redirectData);
                     return ;
                 }
+                $count = 0;
                 foreach ($_orders as $_order) {
                     $_order->setStatus($tobeStatus);
                     $history = $_order->addStatusHistoryComment($userName . " has changed status to $tobeStatusName.", false);
                     $history->setIsCustomerNotified(false);
                     $_order->save();
+                    $count++;
                 }
             }
-            Mage::getSingleton("adminhtml/session")->addSuccess(Mage::helper("adminhtml")->__("Order/s updated Successfully"));
+            Mage::getSingleton("adminhtml/session")->addSuccess(Mage::helper("adminhtml")->__("$count Order".($count > 1) ? 's' : ''." Updated Successfully"));
             $this->_redirect($redirectUrl, $redirectData);
 
         } catch (Exception $e) {

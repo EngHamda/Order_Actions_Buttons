@@ -2,7 +2,7 @@
 <config>
   <modules>
     <StylishEve_OrderActionsButtons>
-      <version>0.1.6</version>
+      <version>0.1.7</version>
     </StylishEve_OrderActionsButtons>
   </modules>
   <global>
@@ -25,9 +25,9 @@
 			<class>StylishEve_OrderActionsButtons_Model_Mysql4</class>
 			<entities>		  
 					<orderbutton>
-					<table>order_button</table>
+						<table>order_button</table>
 					</orderbutton>
-					</entities>
+			</entities>
 			</orderactionsbuttons_mysql4>
 		</models>
 		<!-- 1-start -->
