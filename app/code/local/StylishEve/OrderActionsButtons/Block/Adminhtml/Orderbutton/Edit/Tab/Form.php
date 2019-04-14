@@ -78,16 +78,14 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
                 "onclick"       => "this.value = this.checked ? 1 : 0;",
                 "name"          => "check_warehouse",
                 "container_id"  => "order-check-warehouse-container",
-                "checked"       => $model->getCheckWarehouse(),//!empty("this.value")?true:false,
-                //"checked"       => "1 == this.value ? '' : '';",
+                "checked"       => $model->getCheckWarehouse(),
             ));
             $fieldset->addField('check_delivery_date', 'checkbox', array(
                 "label"         => Mage::helper('orderactionsbuttons')->__('Check Delivery Date?'),
                 "onclick"       => "this.value = this.checked ? 1 : 0;",
                 "name"          => "check_delivery_date",
                 "container_id"  => "order-check-delivery-date-container",
-                "checked"       => $model->getCheckDeliveryDate(),//!empty("this.value")?true:false,
-                //"checked"       => "1 == this.value ? '' : '';",
+                "checked"       => $model->getCheckDeliveryDate(),
             ));
             $fieldset->addField('check_opening_tickets', 'checkbox', array(
                 "label"         => Mage::helper('orderactionsbuttons')->__('Check Any Opening Tickets?'),

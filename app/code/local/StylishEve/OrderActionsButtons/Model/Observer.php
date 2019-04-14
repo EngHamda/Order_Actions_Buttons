@@ -85,7 +85,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
             } elseif ($page_type == 'grid') {
                 $actionTypeArray = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
                 if (in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
-                    $requestData = ['order_current_status' => $buttonData->getorderCurrentStatus()];
+                    $requestData = ['order_current_status' => $buttonData->getOrderCurrentStatus(),'button_id' =>$buttonData->getId() ];
                     $urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
                     //check if action_type is change status OR generate report
                     switch ($buttonData->getActionType()):
@@ -128,11 +128,14 @@ class StylishEve_OrderActionsButtons_Model_Observer
             return false;
         }//endIF
         //check IF order has ticket
+        $isTicketModuleEnabled = (Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk'))?true:false;
         $orderId = $block->getOrder()->getEntityId();
-        $orderHasOpenTicket = $this->_orderHasOpenTicket($orderId);
+        if($isTicketModuleEnabled){
+            $orderHasOpenTicket = $this->_orderHasOpenTicket($orderId);
+        }//endIF
         foreach ($orderActionsData as $buttonData) {
             $checkTickets = ( !empty($buttonData->getCheckOpeningTickets()) )?true:false;
-            if(!$checkTickets || ($checkTickets&&$orderHasOpenTicket) ){
+            if(!$checkTickets || ($checkTickets && $isTicketModuleEnabled && $orderHasOpenTicket) ){
                 $removedBtns = explode(",",$buttonData->getOrderRemovedButtons());
                 foreach ($removedBtns as $btnId){
                     //check if in array
@@ -147,7 +150,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
 
     /**
      *
-     * check IF order has ticket
+     * check IF order has open ticket, remove btn
      *
      */
     public function _orderHasOpenTicket($pOrderId)

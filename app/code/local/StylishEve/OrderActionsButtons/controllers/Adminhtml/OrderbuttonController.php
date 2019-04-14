@@ -29,6 +29,10 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $this->_title($this->__("Orderbutton"));
         $this->_title($this->__("Edit Item"));
 
+        if(!Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
+            Mage::getSingleton("adminhtml/session")->addError("Note: Mirasvit_Helpdesk Module is DISABLED");
+        }
+
         $id = $this->getRequest()->getParam("id");
         $model = Mage::getModel("orderactionsbuttons/orderbutton")->load($id);
         if ($model->getId()) {
@@ -51,6 +55,10 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $this->_title($this->__("OrderActionsButtons"));
         $this->_title($this->__("Orderbutton"));
         $this->_title($this->__("New Item"));
+
+        if(!Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
+            Mage::getSingleton("adminhtml/session")->addError("Note: Mirasvit_Helpdesk Module is DISABLED");
+        }
 
         $id = $this->getRequest()->getParam("id");
         $model = Mage::getModel("orderactionsbuttons/orderbutton")->load($id);
@@ -216,6 +224,8 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     return ;
                 }
             } else {
+                $btnId = $this->getRequest()->getParam('button_id');
+                $btnData = Mage::getSingleton('orderactionsbuttons/orderbutton')->load($btnId);
                 $_current_statuses = explode(',', $currentStatus);
                 $_orders = mage::getModel('sales/order')->getCollection()->addFieldToFilter('status', array('in' => $_current_statuses));
                 if ($_orders->getSize() == 0) {
