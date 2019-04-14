@@ -201,7 +201,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                 ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])
                 ->getFirstItem()->getLabel();
-            $userName = $this->_getUserName();
+            $userName = $this->_getUserInfo()['userName'];
             $orderId = $this->getRequest()->getParam('order_id');
             $redirectUrl = 'adminhtml/sales_order/';
             $redirectData = [];
@@ -288,22 +288,30 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     /**
      * get User Name
      */
-    public function _getUserName()
+    public function _getUserInfo()
     {
         $admin_user_session = Mage::getSingleton('admin/session');
         $userUsername = $admin_user_session->getUser()->getUsername();
         $userFirstname = $admin_user_session->getUser()->getFirstname();
         $userLastname = $admin_user_session->getUser()->getLastname();
+        $userId = $admin_user_session->getUser()->getUserId();
+        $userInfo['userName'] = $userFirstname .' '. $userLastname . ' ('. $userUsername .')';
+        $userInfo['roleName'] = Mage::getModel('admin/user')->load($userId)->getRole()->role_name;
 
-        return $userFirstname .' '. $userLastname . ' ('. $userUsername .')';
+        return $userInfo;
     }
 
     /**
-     *
+     * ask msg
      */
     public function _changeStatus($pUserName, $pOrderId, $pCurrentStatus, $pTobeStatus, $pTobeStatusName)
     {
         $orderObj = Mage::getModel('sales/order')->load($pOrderId);
+        //check currentStatus
+        if(!in_array($orderObj->getStatus(), explode(",", $pCurrentStatus))){
+            Mage::getSingleton("adminhtml/session")->addError("Order Current Status is $orderObj->getStatus() ");
+            return false;
+        }
         //check if $pTobeStatus is "back_to_stock"
         if (in_array($pTobeStatus, ["back_to_stock"])) {
             $hasRma = $this->_checkRmaProducts($orderObj, $pOrderId);
@@ -312,7 +320,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             }
         }//endIF
         //check if $currentStatus is "cash{paidAction}" OR "paid{completecashAction}"
-        if (in_array($pCurrentStatus, ["cash", "paid"])) {
+        if (in_array($pCurrentStatus, ["cash", "paid", "pos", "pending_cfo_approval"])) {
             $this->_handleInvoice($orderObj);
             switch ($pCurrentStatus):
                 case "cash":
@@ -321,6 +329,8 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     }//endIF canShip
                     break;
                 case "paid":
+                case "pos":
+                case "pending_cfo_approval":
                     if ($orderObj->canShip()) {
                         $this->_addShipmentToOrder($orderObj);
                     }//endIF canShip
