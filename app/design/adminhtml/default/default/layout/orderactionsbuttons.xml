@@ -5,20 +5,4 @@
 	  <block type="orderactionsbuttons/adminhtml_orderbutton" name="orderbutton" />
 	</reference>
   </orderactionsbuttons_adminhtml_orderbutton_index>
-	<!-- for generate report -->
-	<orderactionsbuttons_adminhtml_orderbutton_generatereport><!-- ASK: <[modulefolder]_adminhtml_[controllerName]_[actionName]>   -->
-		<!-- for add css for generate report page only -->
-		<reference name="head">
-			<!-- <action method="addCss"> -->
-			<action method="addItem">
-				<type>skin_css</type>
-				<name>orderactionsbuttons/generate-report-custom.css</name>
-			</action>
-		</reference>
-		<reference name="content">
-			<block type="orderactionsbuttons/adminhtml_generatereport" name="generatereport" template="orderactionsbuttons/generatereport.phtml"/>
-			<!-- type=[modulefolder]/adminhtml_[fileName] name =[blockname] temolate=[modulefolder]/adminhtml_[fileName].phtml -->
-		</reference>
-  </orderactionsbuttons_adminhtml_orderbutton_generatereport>
-	<!--  -->
 </layout>

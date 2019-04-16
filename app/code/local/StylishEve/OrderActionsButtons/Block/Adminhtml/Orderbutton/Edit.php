@@ -109,7 +109,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-tickets-container').hide();
                                             
                                             $('#order-check-warehouse-container').show();
-                                            $('#order-check-delivery-date-container').show();
+                                            $('#order-check-delivery-date-container').hide();
                                             
                                             break;
                                           default:
