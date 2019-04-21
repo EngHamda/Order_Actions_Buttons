@@ -45,8 +45,8 @@ class StylishEve_OrderActionsButtons_Model_Observer
     {
         //get user role
         $admin_user_session = Mage::getSingleton('admin/session');
-        $adminuserId = $admin_user_session->getUser()->getUserId();
-        return Mage::getModel('admin/user')->load($adminuserId)->getRole()->role_name;
+        $adminUserId = $admin_user_session->getUser()->getUserId();
+        return Mage::getModel('admin/user')->load($adminUserId)->getRole()->role_name;
     }
 
     public function displayButtons(&$block, $action_type, $page_type)
@@ -63,29 +63,11 @@ class StylishEve_OrderActionsButtons_Model_Observer
         }//endIF
         foreach ($orderActionsData as $buttonData) {
             if ($page_type == 'view') {
-                if (in_array($order->getStatus(), explode(",", $buttonData->getOrderCurrentStatus())) && in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
-                    $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
-                        ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $buttonData->getOrderTobeStatus()])
-                        ->getFirstItem()->getLabel();
-                    $message = Mage::helper('core')->__('Are you sure you want to change order status to '.$tobeStatusName.'?');
-                    $block->addButton('btn_' . $buttonData->getName(), array(
-                        'label' => Mage::helper('core')->__($buttonData->getName()),
-                        'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
-                        // 'onclick' => "window.open('{$block->getUrl(
-							'admin_orderactionsbuttons/adminhtml_orderbutton/changestatus', 
-							[
-								'order_id' => $orderId, 
-								'order_current_status' => $buttonData->getOrderCurrentStatus(), 
-								'order_tobe_status' => $buttonData->getOrderTobeStatus(),
-							]
-						)}');",
-                        'class' => $buttonData->getCssClasses(),//change color and change icon
-                    ));
-                } //endIF
+                $this->_addButtonInBlock($block, $order, $buttonData, $role_name, $orderId);
             } elseif ($page_type == 'grid') {
                 $actionTypeArray = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
                 if (in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
-                    $requestData = ['order_current_status' => $buttonData->getOrderCurrentStatus(),'button_id' =>$buttonData->getId() ];
+                    $requestData = ['order_current_status' => $buttonData->getOrderCurrentStatus(), 'button_id' =>$buttonData->getId() ];
                     $urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
                     //check if action_type is change status OR generate report
                     switch ($buttonData->getActionType()):
@@ -97,7 +79,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
                             $urlAction = 'generatereport';
                             break;
                     endswitch;
-                    // var_dump($buttonData->getData(),$urlRequest,$urlAction);die;
+                    #TODO: change 'window.open' to confirmSetLocation in change status
                     $block->addButton('btn_' . $buttonData->getName(), array(
                         'label' => Mage::helper('core')->__($buttonData->getName()),
                         'onclick' => "window.open('{$block->getUrl($urlRequest.$urlAction, $requestData)}');",
@@ -106,6 +88,37 @@ class StylishEve_OrderActionsButtons_Model_Observer
                 }//endIF
             }
         }//endForeach
+    }
+
+    /**
+     *
+     */
+    public function _addButtonInBlock(&$block, &$pOrder, $pButtonData, $pRoleName, $pOrderId)
+    {
+        if (
+            in_array($pOrder->getStatus(), explode(",", $pButtonData->getOrderCurrentStatus())) &&
+            in_array($pRoleName, explode(",", $pButtonData->getAcceptedRole()))
+        ) {
+            $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
+                ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $pButtonData->getOrderTobeStatus()])
+                ->getFirstItem()->getLabel();
+            $message = Mage::helper('core')->__('Are you sure you want to change order status to '.$tobeStatusName.'?');
+            $block->addButton('btn_' . $pButtonData->getName(), array(
+                'label' => Mage::helper('core')->__($pButtonData->getName()),
+                'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
+                        // 'onclick' => "window.open('{$block->getUrl(
+							'admin_orderactionsbuttons/adminhtml_orderbutton/changestatus', 
+							[
+								'order_id' => $pOrderId, 
+								'order_current_status' => $pButtonData->getOrderCurrentStatus(), 
+								'order_tobe_status' => $pButtonData->getOrderTobeStatus(), 
+								'button_id' => $pButtonData->getId()
+							]
+						)}');",
+                'class' => $pButtonData->getCssClasses(),//change color and change icon
+            ));
+        } //endIF
+
     }
 
     /**

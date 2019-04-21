@@ -2,7 +2,7 @@
 <config>
   <modules>
     <StylishEve_OrderActionsButtons>
-      <version>0.1.7</version>
+      <version>0.1.9</version>
     </StylishEve_OrderActionsButtons>
   </modules>
   <global>
@@ -27,6 +27,9 @@
 					<orderbutton>
 						<table>order_button</table>
 					</orderbutton>
+					<reportsarchive>
+							<table>order_button_reports_archive</table>
+					</reportsarchive>
 			</entities>
 			</orderactionsbuttons_mysql4>
 		</models>
@@ -87,6 +90,11 @@
 			<sort_order>0</sort_order>
 			<action>admin_orderactionsbuttons/adminhtml_orderbutton</action>
 		  </orderbutton>
+			<reportsarchive module="orderactionsbuttons">
+					<title>List Reportsarchive</title>
+					<sort_order>10</sort_order>
+					<action>admin_orderactionsbuttons/adminhtml_orderbutton/reportsarchive</action>
+			</reportsarchive>
 		</children>
 	  </orderactionsbuttons>
 	</menu>
@@ -97,16 +105,20 @@
 		</all>
 		<admin>
 		  <children>
-			<orderactionsbuttons translate="title" module="orderactionsbuttons">
-			  <title>OrderActionsButtons</title>
-			  <sort_order>1000</sort_order>
-			  <children>
-		  	<orderbutton translate="title">
-					<title>Manage Orderbutton</title>
-					<sort_order>0</sort_order>
-		  	</orderbutton>
-			  </children>
-			</orderactionsbuttons>
+				<orderactionsbuttons translate="title" module="orderactionsbuttons">
+					<title>OrderActionsButtons</title>
+					<sort_order>1000</sort_order>
+					<children>
+						<orderbutton translate="title">
+							<title>Manage Orderbutton</title>
+							<sort_order>0</sort_order>
+						</orderbutton>
+						<reportsarchive translate="title">
+								<title>Manage Reportsarchive</title>
+								<sort_order>10</sort_order>
+						</reportsarchive>
+					</children>
+				</orderactionsbuttons>
 		  </children>
 		</admin>
 	  </resources>

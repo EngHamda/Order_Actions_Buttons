@@ -407,4 +407,73 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         }
     }
 
+    /**
+     *
+     * used in edit and add form
+     */
+    static public function getReportActionsValueArray()
+    {
+        $data_array = array();
+        $data_array['Display Report Only'] = 'DisplayOnly';
+        $data_array['Display And Save Report'] = 'DisplayAndSave';
+        return ($data_array);
+    }
+
+    /**
+     *
+     * used in edit and add form
+     */
+    static public function getReportActions()
+    {
+        $data_array = array();
+        $data_array['DisplayOnly'] = 'Display Report Only';
+        $data_array['DisplayAndSave'] = 'Display And Save Report';
+        return ($data_array);
+    }
+
+    /**
+     *
+     * used in edit and add form
+     */
+    static public function getReportActionsInForm()
+    {
+        $data_array = array();
+        $data_array[] = ['value' => null, 'label' => 'Select Report Action'];
+        $reportActions = self::getReportActions();
+        foreach ($reportActions as $value => $label) {
+            $data_array[] = array('value' => $value, 'label' => $label);
+        }
+        return ($data_array);
+    }
+
+    /**
+     *
+     * used in edit and add form
+     */
+    static public function getReportTypes()
+    {
+        $data_array = array();
+        $data_array['Stock In'] = 'Stock In';
+        $data_array['Stock In - Refusal'] = 'Stock In - Refusal';
+        $data_array['Stock In - Return'] = 'Stock In - Return';
+        $data_array['Stock Take'] = 'Stock Take';
+        return ($data_array);
+    }
+
+    /**
+     *
+     * used in edit and add form
+     */
+    static public function getReportTypesInForm()
+    {
+        $data_array = array();
+        $data_array[] = ['value' => null, 'label' => 'Select Report Action'];
+        $reportActions = self::getReportTypes();
+        foreach ($reportActions as $value => $label) {
+            $data_array[] = array('value' => $value, 'label' => $label);
+        }
+        return ($data_array);
+
+    }
+
 }

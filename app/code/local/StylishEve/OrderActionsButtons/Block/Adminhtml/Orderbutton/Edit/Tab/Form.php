@@ -73,6 +73,33 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
             ));
 
             $model  = Mage::registry('orderbutton_data');
+            /**/
+            //TODO: add reportNumber "text,readOnly" "last report id OR default id "
+            $fieldset->addField('report_action', 'select', array(
+                "label" => Mage::helper('orderactionsbuttons')->__('Report Action'),
+                "values" => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportActionsInForm(),
+                "required" => true,
+                "name" => 'report_attrs[report_action]',
+                "value" => $model->getReportAttrs()['report_action'],
+                "container_id" =>"report-action-container",
+            ));
+            $fieldset->addField('report_type', 'select', array(
+                "label" => Mage::helper('orderactionsbuttons')->__('Report Type'),
+                "values" => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportTypesInForm(),
+                "required" => true,
+                "name" => 'report_attrs[report_type]',
+                "value" => $model->getReportAttrs()['report_type'],
+                "container_id" =>"report-type-container",
+            ));
+            $fieldset->addField('report_title', 'text', array(
+                "label" => Mage::helper('orderactionsbuttons')->__('Report Title'),
+                "required" => true,
+                "name" => 'report_attrs[report_title]',
+                "value" => $model->getReportAttrs()['report_title'],
+                "container_id" =>"report-title-container",
+            ));
+            /**/
+
             $fieldset->addField('check_warehouse', 'checkbox', array(
                 "label"         => Mage::helper('orderactionsbuttons')->__('Check Warehouse?'),
                 "onclick"       => "this.value = this.checked ? 1 : 0;",
@@ -97,10 +124,10 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
             ));
 
         if (Mage::getSingleton("adminhtml/session")->getOrderbuttonData()) {
-            $form->setValues(Mage::getSingleton("adminhtml/session")->getOrderbuttonData());
+            $form->addValues(Mage::getSingleton("adminhtml/session")->getOrderbuttonData());
             Mage::getSingleton("adminhtml/session")->setOrderbuttonData(null);
         } elseif (Mage::registry("orderbutton_data")) {
-            $form->setValues(Mage::registry("orderbutton_data")->getData());
+            $form->addValues(Mage::registry("orderbutton_data")->getData());
         }
         return parent::_prepareForm();
     }
