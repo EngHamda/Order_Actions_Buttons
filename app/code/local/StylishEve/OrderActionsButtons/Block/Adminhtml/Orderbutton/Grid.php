@@ -19,11 +19,6 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         return parent::_prepareCollection();
     }
 
-    /**
-     *
-     * - Edit fn. for add role col.
-     *
-     */
     protected function _prepareColumns()
     {
         $this->addColumn("id", array(
@@ -38,20 +33,12 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
             "header" => Mage::helper("orderactionsbuttons")->__("name"),
             "index" => "name",
         ));
-        $this->addColumn("color", array(
-            "header" => Mage::helper("orderactionsbuttons")->__("color"),
-            "index" => "color",
-            'frame_callback' => array($this, '_DisplayText'),
-        ));
-        $this->addColumn("icon", array(
-            "header" => Mage::helper("orderactionsbuttons")->__("icon"),
-            "index" => "icon",
-            'frame_callback' => array($this, '_DisplayText'),
-        ));
+        #TODO:css_classes be select in form & filtration
         $this->addColumn("css_classes", array(
             "header" => Mage::helper("orderactionsbuttons")->__("css_classes"),
             "index" => "css_classes",
             'frame_callback' => array($this, '_DisplayText'),
+            //'filter' => false
         ));
         $this->addColumn("action_type", array(
             "header" => Mage::helper("orderactionsbuttons")->__("action_type"),
@@ -70,26 +57,52 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         $this->addColumn('order_current_status', array(
             'header' => Mage::helper('orderactionsbuttons')->__('order_current_status'),
             'index' => 'order_current_status',
-            'frame_callback' => array($this, '_PreparingOrderCurrentStatusDisplay'), //for prepare col. cell before display
-            'filter_condition_callback' => array($this, '_OrderCurrentStatusFiltration'),//for filtration
+            'frame_callback' => array($this, '_preparingOrderCurrentStatusDisplay'), //for prepare col. cell before display
+            'filter_condition_callback' => array($this, '_orderCurrentStatusFiltration'),//for filtration
             'type' => 'options',
             'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getOrderStatusesInGrid(),
         ));
-
         $this->addColumn('order_tobe_status', array(
             'header' => Mage::helper('orderactionsbuttons')->__('order_tobe_status'),
             'index' => 'order_tobe_status',
-            'frame_callback' => array($this, '_PreparingOrderTobeStatusDisplay'), //for prepare col. cell before display
+            'frame_callback' => array($this, '_preparingOrderTobeStatusDisplay'), //for prepare col. cell before display
             'type' => 'options',
             'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getOrderStatusesInGrid(),
+        ));
+        $this->addColumn("check_warehouse", array(
+            "header" => Mage::helper("orderactionsbuttons")->__("check_warehouse"),
+            "index" => "check_warehouse",
+            'frame_callback' => array($this, '_DisplayCheckText'),
+            'type' => 'options',
+            'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getChecksInGrid(),
+        ));
+        $this->addColumn("check_delivery_date", array(
+            "header" => Mage::helper("orderactionsbuttons")->__("check_delivery_date"),
+            "index" => "check_delivery_date",
+            'frame_callback' => array($this, '_DisplayCheckText'),
+            'type' => 'options',
+            'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getChecksInGrid(),
+        ));
+        $this->addColumn("report_attrs", array(
+            "header" => Mage::helper("orderactionsbuttons")->__("report_attrs"),
+            "index" => "report_attrs",
+            'frame_callback' => array($this, '_DisplayReportAttrsText'),
+            'filter' => false
         ));
 
         $this->addColumn('order_removed_buttons', array(
             'header' => Mage::helper('orderactionsbuttons')->__('order_removed_buttons'),
             'index' => 'order_removed_buttons',
-            'frame_callback' => array($this, '_PreparingOrderRemovedButtonsDisplay'), //for prepare col. cell before display
+            'frame_callback' => array($this, '_preparingOrderRemovedButtonsDisplay'), //for prepare col. cell before display
             'type' => 'options',
             'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getRemovedButtonsNamesInGrid(),
+        ));
+        $this->addColumn("check_opening_tickets", array(
+            "header" => Mage::helper("orderactionsbuttons")->__("check_opening_tickets"),
+            "index" => "check_opening_tickets",
+            'frame_callback' => array($this, '_DisplayCheckText'),
+            'type' => 'options',
+            'options' => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getChecksInGrid(),
         ));
 
         $this->addExportType('*/*/exportCsv', Mage::helper('sales')->__('CSV'));
@@ -302,7 +315,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
      * prepare order_current_status columns
      *
      */
-    public function _PreparingOrderCurrentStatusDisplay($value, $row, $column, $isExport)
+    public function _preparingOrderCurrentStatusDisplay($value, $row, $column, $isExport)
     {
         $_orderStatusesCollection = self::getAllOrderStatusesRecorders();
         $_orderCurrentStatuses = explode(',', $row->getOrderCurrentStatus());
@@ -325,7 +338,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
      * - for filter statuses in order_current_status by status label
      *
      */
-    public function _OrderCurrentStatusFiltration($collection, $column)
+    public function _orderCurrentStatusFiltration($collection, $column)
     {
         if(!$value = $column->getFilter()->getValue()){
             return '**';
@@ -337,7 +350,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
      * prepare order_tobe_status columns
      *
      */
-    public function _PreparingOrderTobeStatusDisplay($value, $row, $column, $isExport)
+    public function _preparingOrderTobeStatusDisplay($value, $row, $column, $isExport)
     {
         $_orderStatusesCollection = self::getAllOrderStatusesRecorders();
         $_orderTobeStatuses = $row->getOrderTobeStatus();
@@ -346,64 +359,6 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
             return '--';
         } else{
             return $_orderStatusesCollection->getFirstItem()->getLabel();
-        }
-    }
-
-    static public function getRemovedButtonsNames()
-    {
-        $data_array = array();
-        $data_array['back'] = 'back';
-        $data_array['order_hold'] = 'Hold';
-        $data_array['order_ship'] = 'Ship';
-        $data_array['order_edit'] = 'Edit';
-        $data_array['order_cancel'] = 'Cancel';
-        $data_array['order_unhold'] = 'Unhold';
-        $data_array['order_invoice'] = 'Invoice';
-        $data_array['order_reorder'] = 'Reorder';
-        $data_array['order_creditmemo'] = 'Creditmemo';
-        $data_array['send_notification'] = 'Send Notification';
-        $data_array['deny_payment'] = 'Deny Payment';
-        $data_array['accept_payment'] = 'Accept Payment';
-        $data_array['void_payment'] = 'Void Payment';
-        $data_array['get_review_payment_update'] = 'Reorder';
-        return ($data_array);
-    }
-
-    static public function getRemovedButtonsNamesInForm()
-    {
-        $data_array = array();
-        $removedButtonsNames = self::getRemovedButtonsNames();
-        foreach ($removedButtonsNames as $index => $value) {
-            $data_array[] = array('value' => $index, 'label' => $value);
-        }
-        return ($data_array);
-    }
-
-    /**
-     * used in Grid For Filtration
-     */
-    static public function getRemovedButtonsNamesInGrid()
-    {
-        $data_array = array();
-        $removedButtonsNames = self::getRemovedButtonsNames();
-        foreach ($removedButtonsNames as $index => $btn) {
-            $data_array[$index] = $btn;
-        }
-        return ($data_array);
-    }
-
-    /**
-     * prepare order_removed_buttons column
-     *
-     */
-    public function _PreparingOrderRemovedButtonsDisplay($value, $row, $column, $isExport)
-    {
-        $_orderRemovedButtons = $row->getOrderRemovedButtons();
-        $removedButtonsNames = self::getRemovedButtonsNames();
-        if(empty($_orderRemovedButtons)) {
-            return '--';
-        } else{
-            return $removedButtonsNames[$_orderRemovedButtons];
         }
     }
 
@@ -474,6 +429,102 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         }
         return ($data_array);
 
+    }
+
+    /**
+     * used in Grid For Filtration
+     */
+    static public function getChecksInGrid()
+    {
+        return array('No','Yes');
+    }
+
+    /**
+     *
+     */
+    public function _DisplayCheckText($value, $row, $column, $isExport)
+    {
+        if(empty($value)){
+            return '--';
+        } else{
+            return $value;
+        }
+    }
+
+    /**
+     *
+     */
+    public function _DisplayReportAttrsText($value, $row, $column, $isExport)
+    {
+        if(empty($value)) {
+            return '--';
+        } else{
+            $_htmlContent = '<div style="position:relative"><ul>';
+            foreach ( json_decode(html_entity_decode($value),true) as $i => $v )
+            {
+                $_htmlContent .= '<li style="margin:3px;">•&nbsp;'. $i.': '. $v .'</li>';
+            }
+            $_htmlContent .= '</ul></div>';
+            return $_htmlContent;
+        }
+    }
+
+    static public function getRemovedButtonsNames()
+    {
+        $data_array = array();
+        $data_array['back'] = 'back';
+        $data_array['order_hold'] = 'Hold';
+        $data_array['order_ship'] = 'Ship';
+        $data_array['order_edit'] = 'Edit';
+        $data_array['order_cancel'] = 'Cancel';
+        $data_array['order_unhold'] = 'Unhold';
+        $data_array['order_invoice'] = 'Invoice';
+        $data_array['order_reorder'] = 'Reorder';
+        $data_array['order_creditmemo'] = 'Creditmemo';
+        $data_array['send_notification'] = 'Send Notification';
+        $data_array['deny_payment'] = 'Deny Payment';
+        $data_array['accept_payment'] = 'Accept Payment';
+        $data_array['void_payment'] = 'Void Payment';
+        $data_array['get_review_payment_update'] = 'Reorder';
+        return ($data_array);
+    }
+
+    static public function getRemovedButtonsNamesInForm()
+    {
+        $data_array = array();
+        $removedButtonsNames = self::getRemovedButtonsNames();
+        foreach ($removedButtonsNames as $index => $value) {
+            $data_array[] = array('value' => $index, 'label' => $value);
+        }
+        return ($data_array);
+    }
+
+    /**
+     * used in Grid For Filtration
+     */
+    static public function getRemovedButtonsNamesInGrid()
+    {
+        $data_array = array();
+        $removedButtonsNames = self::getRemovedButtonsNames();
+        foreach ($removedButtonsNames as $index => $btn) {
+            $data_array[$index] = $btn;
+        }
+        return ($data_array);
+    }
+
+    /**
+     * prepare order_removed_buttons column
+     *
+     */
+    public function _preparingOrderRemovedButtonsDisplay($value, $row, $column, $isExport)
+    {
+        $_orderRemovedButtons = $row->getOrderRemovedButtons();
+        $removedButtonsNames = self::getRemovedButtonsNames();
+        if(empty($_orderRemovedButtons)) {
+            return '--';
+        } else{
+            return $removedButtonsNames[$_orderRemovedButtons];
+        }
     }
 
 }

@@ -3,31 +3,27 @@
 class StylishEve_OrderActionsButtons_Model_Observer
 {
     /**
-     * for add "available" action buttons in order page to change order status
+     * for add or remove "available" action buttons in order page to change order status
+     * OR add "available" action buttons in orders grid page to change orders status OR generate reports
      *
      * - check each page, each block
-     * - for accepted block
-     *        - get order //for specifice order (ex.view order with id = 1)
-     *        - get all data of OrderActionsButtons module
-     *        - loop each for remove button for each record
-     *                  -- has action_type == RemoveButtonsFromView && page_type == view
-     *        - loop each for create change status buttons for each record
-     *                  -- has action_type == ChangeStatusForView && page_type == view
-     *            * check if order_current_status has avalible actionsbuttons
-     *                * if yes check button type then show buttons
-     *        - loop each for create generate report button for each record
-     *                  -- has action_type == GenerateReportForGrid && page_type == grid
-     *
+     *      - for accepted block "Mage_Adminhtml_Block_Sales_Order_View"
+     *              - call displayButtons "method", send page_type, actions
+     *              - call removeButtons "method", send page_type, actions
+     *      - for accepted block "Mage_Adminhtml_Block_Sales_Order"
+     *              - call displayButtons "method", send page_type, actions
      */
     public function AddOrRemoveOrderActionsButton(Varien_Event_Observer $observer)
     {
         try{
             $block = $observer->getBlock();
             if ($block instanceof Mage_Adminhtml_Block_Sales_Order_View) {
-                $this->displayButtons($block, array('ChangeStatusForView'), 'view');
-                $this->removeButtons( $block, array('RemoveButtonsFromView'), 'view');
+                $actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
+                $this->displayButtons($block, array($actions['Change Status For View Page']), 'view');
+                $this->removeButtons( $block, array($actions['Remove Buttons From View Page']), 'view');
             } elseif ($block instanceof Mage_Adminhtml_Block_Sales_Order) {
-                $this->displayButtons($block, array('ChangeStatusForGrid', 'GenerateReportForGrid'), 'grid');
+                $actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
+                $this->displayButtons($block, array($actions['Change Status For Grid Page'], $actions['Generate Report']), 'grid');
             }//endIf check Block
         } catch(Exception $e){
             Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
@@ -38,75 +34,84 @@ class StylishEve_OrderActionsButtons_Model_Observer
 
     /**
      *
-     * get login user role
+     * get login user role name
      *
+     * @return String
      */
     public function getUserRole()
     {
-        //get user role
         $admin_user_session = Mage::getSingleton('admin/session');
         $adminUserId = $admin_user_session->getUser()->getUserId();
         return Mage::getModel('admin/user')->load($adminUserId)->getRole()->role_name;
     }
 
-    public function displayButtons(&$block, $action_type, $page_type)
+    /**
+     * - get order from block
+     * - get orderId if order exists in block (ex.view order with id = 1)
+     * - get login user role name
+     * - get order buttons from db depending on roleName, actionType
+     *      - return false if no buttons exist
+     *      - loop each button
+     *              -- has page_type == view
+     *                  ** call _addButtonInViewBlock "method", send $block, $order, $buttonData, $roleName, $orderId
+     *              -- has page_type == grid
+     *                  ** call _addButtonInViewBlock "method", send $block, $buttonData, $roleName
+     *
+     * @param Object $block
+     * @param Array $pActionType
+     * @param String $pPageType
+     * @return Boolean
+     */
+    public function displayButtons(&$block, $pActionType, $pPageType)
     {
         $order = $block->getOrder();
         if ($order)
             $orderId = $order->getEntityId();
-        $role_name = $this->getUserRole();
+        $roleName = $this->getUserRole();
         $orderActionsData = Mage::getSingleton('orderactionsbuttons/orderbutton')->getCollection();
-        $orderActionsData->addFieldToFilter('action_type', array('in' => $action_type));
-        $orderActionsData->addFieldToFilter('accepted_role', array('finset' => $role_name));
+        $orderActionsData->addFieldToFilter('action_type', array('in' => $pActionType));
+        $orderActionsData->addFieldToFilter('accepted_role', array('finset' => $roleName));
         if($orderActionsData->getSize() == 0){
             return false;
         }//endIF
         foreach ($orderActionsData as $buttonData) {
-            if ($page_type == 'view') {
-                $this->_addButtonInBlock($block, $order, $buttonData, $role_name, $orderId);
-            } elseif ($page_type == 'grid') {
-                $actionTypeArray = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
-                if (in_array($role_name, explode(",", $buttonData->getAcceptedRole()))) {
-                    $requestData = ['order_current_status' => $buttonData->getOrderCurrentStatus(), 'button_id' =>$buttonData->getId() ];
-                    $urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
-                    //check if action_type is change status OR generate report
-                    switch ($buttonData->getActionType()):
-                        case $actionTypeArray['Change Status For Grid Page']:
-                            $urlAction = 'changestatus';
-                            $requestData['order_tobe_status'] = $buttonData->getOrderTobeStatus();
-                            break;
-                        case $actionTypeArray['Generate Report']:
-                            $urlAction = 'generatereport';
-                            break;
-                    endswitch;
-                    #TODO: change 'window.open' to confirmSetLocation in change status
-                    $block->addButton('btn_' . $buttonData->getName(), array(
-                        'label' => Mage::helper('core')->__($buttonData->getName()),
-                        'onclick' => "window.open('{$block->getUrl($urlRequest.$urlAction, $requestData)}');",
-                        'class' => $buttonData->getCssClasses(),//change color and change icon
-                    ));
-                }//endIF
+            if ($pPageType == 'view') {
+                $this->_addButtonInViewBlock($block, $order, $buttonData, $roleName, $orderId);
+            } elseif ($pPageType == 'grid') {
+                $this->_addButtonInGridBlock($block, $buttonData, $roleName);
             }
         }//endForeach
     }
 
     /**
+     * depend on orderStatus, userRoleName
+     *  - get tobeStatusName
+     *  - add button
      *
+     * @param Object $block
+     * @param Object $pOrder
+     * @param Object $pButtonData
+     * @param String $pRoleName
+     * @param Int $pOrderId
+     * @return Boolean
      */
-    public function _addButtonInBlock(&$block, &$pOrder, $pButtonData, $pRoleName, $pOrderId)
+    public function _addButtonInViewBlock(&$block, &$pOrder, $pButtonData, $pRoleName, $pOrderId)
     {
         if (
-            in_array($pOrder->getStatus(), explode(",", $pButtonData->getOrderCurrentStatus())) &&
-            in_array($pRoleName, explode(",", $pButtonData->getAcceptedRole()))
+            !in_array($pOrder->getStatus(), explode(",", $pButtonData->getOrderCurrentStatus())) ||
+            !in_array($pRoleName, explode(",", $pButtonData->getAcceptedRole()))
         ) {
-            $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
-                ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $pButtonData->getOrderTobeStatus()])
-                ->getFirstItem()->getLabel();
-            $message = Mage::helper('core')->__('Are you sure you want to change order status to '.$tobeStatusName.'?');
-            $block->addButton('btn_' . $pButtonData->getName(), array(
-                'label' => Mage::helper('core')->__($pButtonData->getName()),
-                'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
-                        // 'onclick' => "window.open('{$block->getUrl(
+            return false;
+        } //endIF
+
+        $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
+            ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $pButtonData->getOrderTobeStatus()])
+            ->getFirstItem()->getLabel();
+        $message = Mage::helper('core')->__('Are you sure you want to change order status to '.$tobeStatusName.'?');
+
+        $block->addButton('btn_' . $pButtonData->getName(), array(
+            'label' => Mage::helper('core')->__($pButtonData->getName()),
+            'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl(
 							'admin_orderactionsbuttons/adminhtml_orderbutton/changestatus', 
 							[
 								'order_id' => $pOrderId, 
@@ -115,10 +120,54 @@ class StylishEve_OrderActionsButtons_Model_Observer
 								'button_id' => $pButtonData->getId()
 							]
 						)}');",
-                'class' => $pButtonData->getCssClasses(),//change color and change icon
-            ));
-        } //endIF
+            'class' => $pButtonData->getCssClasses(),//change color and change icon
+        ));
+    }
 
+    /**
+     * depend on userRoleName, buttonActionType
+     *  - add button
+     *
+     * @param Object $block
+     * @param Object $pButtonData
+     * @param String $pRoleName
+     * @return Boolean
+     */
+    public function _addButtonInGridBlock(&$block, $pButtonData, $pRoleName)
+    {
+        if (!in_array($pRoleName, explode(",", $pButtonData->getAcceptedRole()))) {
+            return false;
+        }//endIF
+        $_actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
+        $_requestData = ['order_current_status' => $pButtonData->getOrderCurrentStatus(), 'button_id' =>$pButtonData->getId() ];
+        $_urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
+
+        //check if actionType is change status OR generate report
+        switch ($pButtonData->getActionType()):
+            case $_actions['Change Status For Grid Page']:
+                $_urlAction = 'changestatus';
+                $_requestData['order_tobe_status'] = $pButtonData->getOrderTobeStatus();
+
+                $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
+                    ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $pButtonData->getOrderTobeStatus()])
+                    ->getFirstItem()->getLabel();
+                $message = Mage::helper('core')->__('Are you sure you want to update available orders status to '.$tobeStatusName.'?');
+
+                $block->addButton('btn_' . $pButtonData->getName(), array(
+                    'label' => Mage::helper('core')->__($pButtonData->getName()),
+                    'onclick' => "confirmSetLocation('{$message}', '{$block->getUrl($_urlRequest.$_urlAction, $_requestData)}');",
+                    'class' => $pButtonData->getCssClasses(),//change color and change icon
+                ));
+                break;
+            case $_actions['Generate Report']:
+                $_urlAction = 'generatereport';
+                $block->addButton('btn_' . $pButtonData->getName(), array(
+                    'label' => Mage::helper('core')->__($pButtonData->getName()),
+                    'onclick' => "window.open('{$block->getUrl($_urlRequest.$_urlAction, $_requestData)}');",
+                    'class' => $pButtonData->getCssClasses(),//change color and change icon
+                ));
+                break;
+        endswitch;
     }
 
     /**
@@ -126,14 +175,19 @@ class StylishEve_OrderActionsButtons_Model_Observer
      *  - to get btn id ===> id form $block->(protected)_buttons[$level][$id]"sourceCode"
      *  - $block->unsetChild('order_edit_button');//for remove child in block
      *  - $block->getButtonsHtml(); //for get html for all btns in block
+     *
+     * @param Object $block
+     * @param String $pActionType
+     * @param String $pPageType
+     * @return Boolean
      */
-    public function removeButtons(&$block, $action_type='RemoveButtonForView', $page_type='view')
+    public function removeButtons(&$block, $pActionType='RemoveButtonForView', $pPageType='view')
     {
         $orderActions = array_keys($block->getChild());//for get list of all buttons in block
-        $role_name = $this->getUserRole();
+        $roleName = $this->getUserRole();
         $orderActionsData = Mage::getSingleton('orderactionsbuttons/orderbutton')->getCollection();
-        $orderActionsData->addFieldToFilter('action_type', array('in' => $action_type));
-        $orderActionsData->addFieldToFilter('accepted_role', array('finset' => $role_name));
+        $orderActionsData->addFieldToFilter('action_type', array('in' => $pActionType));
+        $orderActionsData->addFieldToFilter('accepted_role', array('finset' => $roleName));
         $orderActionsData->addFieldToFilter('order_current_status', array('finset' => $block->getOrder()->getStatus()));
         $orderActionsData->addFieldToFilter('order_removed_buttons', array('neq' => ''));
         $orderActionsData->addFieldToFilter('order_removed_buttons', array('notnull' => true));
@@ -165,6 +219,8 @@ class StylishEve_OrderActionsButtons_Model_Observer
      *
      * check IF order has open ticket, remove btn
      *
+     * @param Int $pOrderId
+     * @return Boolean $orderHasOpenTicket
      */
     public function _orderHasOpenTicket($pOrderId)
     {

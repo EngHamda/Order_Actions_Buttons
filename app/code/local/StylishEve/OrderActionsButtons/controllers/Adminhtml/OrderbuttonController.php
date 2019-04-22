@@ -23,6 +23,15 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $this->renderLayout();
     }
 
+    /**
+     * Note:
+     *  - using json instead of serialization
+     *      ** because unserialize fn. return error "PHP Notice:  unserialize(): Error at offset 5 of 178 bytes" in grid page
+     *      ** another solution use "base64_encode"
+     *          in case serialization => $pButtonData['report_attrs'] = base64_encode(serialize($pButtonData['report_attrs']));
+     *          in case unserialization => $eportAttrsArray = unserialize(base64_decode($eportAttrs));
+     *
+     */
     public function editAction()
     {
         $this->_title($this->__("OrderActionsButtons"));
@@ -32,16 +41,21 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         if(!Mage::helper('core')->isModuleEnabled('Mirasvit_Helpdesk')){
             Mage::getSingleton("adminhtml/session")->addError("Note: Mirasvit_Helpdesk Module is DISABLED");
         }
+        if(!Mage::helper('core')->isModuleEnabled('MDN_AdvancedStock')){
+            Mage::getSingleton("adminhtml/session")->addError("Note: MDN_AdvancedStock Module is DISABLED");
+
+        }
+        if(!Mage::helper('core')->isModuleEnabled('Stylisheve_Warehouserole')){
+            Mage::getSingleton("adminhtml/session")->addError("Note: Stylisheve_Warehouserole Module is DISABLED");
+        }
 
         $id = $this->getRequest()->getParam("id");
         $model = Mage::getModel("orderactionsbuttons/orderbutton")->load($id);
         if ($model->getId()) {
-            /**/
             if ($model->getActionType() == StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray()['Generate Report'] && $eportAttrs = $model->getReportAttrs()) {
-                $eportAttrsArray = unserialize($eportAttrs);
+                $eportAttrsArray = json_decode($eportAttrs, true);
                 $model->setReportAttrs($eportAttrsArray);
             }
-            /**/
             Mage::register("orderbutton_data", $model);
             $this->loadLayout();
             $this->_setActiveMenu("orderactionsbuttons/orderbutton");
@@ -134,6 +148,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
 
     /**
      *
+     * @param Array $pButtonData
      */
     public function _prepareButtonDataBeforeSave(&$pButtonData)
     {
@@ -153,7 +168,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $pButtonData['check_delivery_date'] = (array_key_exists('check_delivery_date', $pButtonData))?$pButtonData['check_delivery_date']:'0';
 
         if($pButtonData['action_type'] == StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray()['Generate Report']){
-            $pButtonData['report_attrs'] = serialize($pButtonData['report_attrs']);
+            $pButtonData['report_attrs'] = json_encode($pButtonData['report_attrs']);
         } else{
             if(array_key_exists('report_attrs', $pButtonData)){
                 unset($pButtonData['report_attrs']);
@@ -219,9 +234,9 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     }
 
     /**
-     *  change order status
+     *  change order/s status
      *
-     * - get order_id, order_tobe_status
+     * - get order_id, order_tobe_status, order_current_status
      * - get order & change it status
      * - redirect to last page:ex. admin/sales_order/view/order_id/xxx
      */
@@ -231,6 +246,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             $count = 1;
             $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
             $currentStatus = $this->getRequest()->getParam('order_current_status');
+            $currentStatuses = explode(',', $currentStatus);
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                 ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])->getFirstItem()->getLabel();
             $_userInfo = $this->_getUserInfo();
@@ -242,40 +258,22 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 $redirectUrl = $redirectUrl . 'view';
                 $redirectData['order_id'] = $orderId;
                 $orderObj = Mage::getModel('sales/order')->load($orderId);
-                $result = $this->_changeStatus($orderObj, $orderId, $userName, $currentStatus, $tobeStatus, $tobeStatusName);
+                $result = $this->_changeStatus($orderObj, $orderId, $userName, $currentStatuses, $tobeStatus, $tobeStatusName);
                 if(!$result){
                     $this->_redirect($redirectUrl, $redirectData);
                     return ;
                 }
             } else {
                 $count = 0;
-                $_currentStatuses = explode(',', $currentStatus);
-                $_orders = Mage::getModel('sales/order')->getCollection();
-                $_orders->addFieldToSelect(['status', 'entity_id']);
-
+                $roleId = $_userInfo['roleId'];
                 $btnId = $this->getRequest()->getParam('button_id');
                 $btnData = Mage::getSingleton('orderactionsbuttons/orderbutton')->load($btnId);
-
-                $_orders->addFieldToFilter('status', ['in'=> $_currentStatuses]);
-                //TODO:check warehouse Module is active
-                if($btnData->getCheckWarehouse()){
-                    //get orders depend on warehouses
-                    $roleId = $_userInfo['roleId'];
-
-                    $_orders->getSelect()->join(
-                        ['sfoi' => 'sales_flat_order_item'], 'sfoi.order_id = `main_table`.entity_id', []
-                    )->join(
-                        ['esfoi' => 'erp_sales_flat_order_item'], 'esfoi.esfoi_item_id = sfoi.item_id', []
-                    )->join(
-                        ['swr' => 'stylisheve_warehouses_roles'], 'FIND_IN_SET(esfoi.preparation_warehouse, swr.warehouse_id)', []
-                    )->where("swr.role_id = $roleId");
-
-                    $_orders->getSelect()->group('main_table.entity_id');
-                }
-                if($btnData->getCheckDeliveryDate()){
-                    $_orders->getSelect()->join(
-                        ['aad' => 'amasty_amdeliverydate_deliverydate'], 'aad.order_id = `main_table`.entity_id', ['date']
-                    )->where("aad.date = '0000-00-00' OR CURDATE() >= aad.date OR CURDATE()+5 >= aad.date ");
+                $_orders = Mage::getModel('sales/order')->getCollection();
+                $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
+                $result = $this->_prepareSelectOrdersQueryForChangeStatus($_orders, $btnData, $roleId);
+                if(!$result){
+                    $this->_redirect($redirectUrl, $redirectData);
+                    return ;
                 }
                 if ($_orders->getSize() == 0) {
                     Mage::getSingleton("adminhtml/session")->addSuccess(
@@ -284,10 +282,9 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     $this->_redirect($redirectUrl, $redirectData);
                     return ;
                 }
-
                 foreach ($_orders as $_order) {
                     $orderId = $_order->getEntityId();
-                    $result = $this->_changeStatus($_order, $userName, $orderId, $currentStatus, $tobeStatus, $tobeStatusName);
+                    $result = $this->_changeStatus($_order, $userName, $orderId, $currentStatuses, $tobeStatus, $tobeStatusName);
                     if(!$result){
                         continue;
                     }
@@ -310,7 +307,9 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     }
 
     /**
-     * get User Name
+     * get User Info
+     *
+     * @return Array
      */
     public function _getUserInfo()
     {
@@ -329,12 +328,19 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
 
     /**
      * ask msg
+     *
+     * @param Object $pOrderObj
+     * @param String $pUserName
+     * @param Int $pOrderId
+     * @param Array $pCurrentStatuses
+     * @param String $pTobeStatus
+     * @param String $pTobeStatusName
+     * @return Boolean
      */
-    public function _changeStatus(&$pOrderObj, $pUserName, $pOrderId, $pCurrentStatus, $pTobeStatus, $pTobeStatusName)
+    public function _changeStatus(&$pOrderObj, $pUserName, $pOrderId, $pCurrentStatuses, $pTobeStatus, $pTobeStatusName)
     {
-        //$orderObj = Mage::getModel('sales/order')->load($pOrderId);
         //check currentStatus
-        if(!in_array($pOrderObj->getStatus(), explode(",", $pCurrentStatus))){
+        if(!in_array($pOrderObj->getStatus(), $pCurrentStatuses)){
             Mage::getSingleton("adminhtml/session")->addError("Order Current Status is $pOrderObj->getStatus() ");
             return false;
         }
@@ -361,14 +367,14 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 // (pending_cfo_approval, pos {'Administrators', 'CFO', 'Accountant'})
                 // (cash {'Administrators', 'CFO', 'Accountant'} {paidAction})
                 $this->_handleInvoice($pOrderObj);
-                if(in_array("cash", explode(",", $pCurrentStatus))) {
+                if(in_array("cash", $pCurrentStatuses)) {
                     if (!$this->_checkOrderHasItemWithoutSerial($pOrderObj)) {
                         $this->_addShipmentToOrder($pOrderObj);
                     }//endIF canShip
                 } elseif (
-                    in_array('pending_cfo_approval', explode(",", $pCurrentStatus)) ||
-                    in_array('pos', explode(",", $pCurrentStatus)) ||
-                    in_array('paid', explode(",", $pCurrentStatus))
+                    in_array('pending_cfo_approval', $pCurrentStatuses) ||
+                    in_array('pos', $pCurrentStatuses) ||
+                    in_array('paid', $pCurrentStatuses)
                 ) {
                     if ($pOrderObj->canShip()) {
                         $this->_addShipmentToOrder($pOrderObj);
@@ -490,9 +496,43 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     }
 
     /**
+     *
+     */
+    public function _prepareSelectOrdersQueryForChangeStatus(&$pOrdersModel, $pBtnData, $pRoleId)
+    {
+        $pOrdersModel->addFieldToSelect(['status', 'entity_id']);
+        if($pBtnData->getCheckWarehouse()){
+            if(!Mage::helper('core')->isModuleEnabled('MDN_AdvancedStock')){
+                Mage::getSingleton("adminhtml/session")->addError("Note: MDN_AdvancedStock Module is DISABLED");
+                return false;
+
+            }
+            if(!Mage::helper('core')->isModuleEnabled('Stylisheve_Warehouserole')){
+                Mage::getSingleton("adminhtml/session")->addError("Note: Stylisheve_Warehouserole Module is DISABLED");
+                return false;
+            }
+            //get orders depend on warehouses
+            $pOrdersModel->getSelect()->join(
+                ['sfoi' => 'sales_flat_order_item'], 'sfoi.order_id = `main_table`.entity_id', []
+            )->join(
+                ['esfoi' => 'erp_sales_flat_order_item'], 'esfoi.esfoi_item_id = sfoi.item_id', []
+            )->join(
+                ['swr' => 'stylisheve_warehouses_roles'], 'FIND_IN_SET(esfoi.preparation_warehouse, swr.warehouse_id)', []
+            )->where("swr.role_id = $pRoleId");
+
+            $pOrdersModel->getSelect()->group('main_table.entity_id');
+        }
+        if($pBtnData->getCheckDeliveryDate()){
+            $pOrdersModel->getSelect()->join(
+                ['aad' => 'amasty_amdeliverydate_deliverydate'], 'aad.order_id = `main_table`.entity_id', ['date']
+            )->where("aad.date = '0000-00-00' OR CURDATE() >= aad.date OR CURDATE()+5 >= aad.date ");
+        }
+        return true;
+    }
+
+    /**
      *  generate Report
      *
-     * - get order_current_status
      *
      */
     public function generateReportAction()
@@ -510,9 +550,13 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             $_orders = Mage::getSingleton('sales/order')->getCollection();
             $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
 
-            $reportAction = unserialize($btnData->getReportAttrs())['report_action'];
+            $reportAction = json_decode($btnData->getReportAttrs(),true)['report_action'];
             $reportActions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportActionsValueArray();
-            $this->_prepareOrdersQuery($_orders, $btnData, $roleId);
+            $result = $this->_prepareOrdersQuery($_orders, $btnData, $roleId);
+            if(!$result){
+                $this->_redirect('adminhtml/sales_order/', []);
+                return ;
+            }
             if(0==$_orders->getSize()){
                 Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__("No orders exist for generate report"));
                 $this->_redirect('adminhtml/sales_order/', []);
@@ -521,8 +565,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             /* start */
             $result = $this->_getReport($_orders, $btnData);
             if($result['error'] || !array_key_exists('reportNo', $result)){
-                $msg = ($result['error'])? $result['msg']: "No orders exist for generate report";
-                Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($msg));
                 $this->_redirect('adminhtml/sales_order/', []);
                 return ;
             }
@@ -530,8 +572,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             /*depend on action */
             switch ($reportAction):
                 case $reportActions['Display And Save Report']:
-                    //Todo: check current status first
-                    /**/
                     $reportNo = $result['reportNo'];
                     $result = $this->_generateReport($reportContent);
                     if($result['error']){
@@ -540,7 +580,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                         return ;
                     }
                     $reportFileName = $result['filePath'];
-                    $reportType = unserialize($btnData->getReportAttrs())['report_type'];
+                    $reportType = json_decode($btnData->getReportAttrs(),true)['report_type'];
                     //save report path to archive
                     $reportArchiveData = ['report_number'=>$reportNo, 'report_name'=> pathinfo($reportFileName)['basename'], 'report_type'=>$reportType];
                     $result = $this->_saveReportToArchive($reportArchiveData);
@@ -555,7 +595,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                         $this->_redirect('adminhtml/sales_order/', []);
                         return ;
                     }
-                    /**/
                     break;
                 case $reportActions['Display Report Only']:
                     break;
@@ -579,6 +618,15 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             ['increment_id', 'order_currency_code', 'grand_total']
         );
         if($pBtnData->getCheckWarehouse()){
+            if(!Mage::helper('core')->isModuleEnabled('MDN_AdvancedStock')){
+                Mage::getSingleton("adminhtml/session")->addError("Note: MDN_AdvancedStock Module is DISABLED");
+                return false;
+
+            }
+            if(!Mage::helper('core')->isModuleEnabled('Stylisheve_Warehouserole')){
+                Mage::getSingleton("adminhtml/session")->addError("Note: Stylisheve_Warehouserole Module is DISABLED");
+                return false;
+            }
             //get items depend on warehouses
             $pOrdersModel->getSelect()->join(
                 ['sfoi' => 'sales_flat_order_item'], 'sfoi.order_id = `main_table`.entity_id',
@@ -593,14 +641,15 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 ['sfop' => 'sales_flat_order_payment'], 'sfop.parent_id = `main_table`.entity_id', ['method']
             )->join(
                 ['esfoi' => 'erp_sales_flat_order_item'], 'esfoi.esfoi_item_id = sfoi.item_id', []
-             )->join(
-                 ['swr' => 'stylisheve_warehouses_roles'], 'FIND_IN_SET(esfoi.preparation_warehouse, swr.warehouse_id)', []
-             )->where("swr.role_id = $pRoleId");
+            )->join(
+                ['swr' => 'stylisheve_warehouses_roles'], 'FIND_IN_SET(esfoi.preparation_warehouse, swr.warehouse_id)', []
+            )->where("swr.role_id = $pRoleId");
             $pOrdersModel->getSelect()->joinLeft(
                 ['parent' => 'sales_flat_order_item'], 'parent.parent_item_id = sfoi.item_id',
                 ['parent_row_total'=>'parent.row_total', 'parent_discount_amount'=>'parent.discount_amount']
             );
         }//endIF
+        return true;
     }
 
     /**
@@ -617,9 +666,11 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $reportHtmlTemplate = file_get_contents($fileDir.DIRECTORY_SEPARATOR.'report.html', true);
         if(0==count($itemsArray) && 0==count($ordersArray)){
             $reportContent = str_replace("###replace###", "No Data Available", $reportHtmlTemplate);
-            return ['error'=>0, 'msg'=>'No Data Available', 'reportContent'=>$reportContent];
+            $msg = 'No Data Available';
+            Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($msg));
+            return ['error'=>0, 'msg'=>$msg, 'reportContent'=>$reportContent];
         }
-        $reportTitle = unserialize($pBtnObj->getReportAttrs())['report_title'];
+        $reportTitle = json_decode($pBtnObj->getReportAttrs(),true)['report_title'];
         //generateReportID
         $result = $this->_generateReportId();
         if($result['error']){
@@ -708,9 +759,8 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
      */
     public function _generateReport($pReportContent)
     {
-        $baseDir  = Mage::getBaseDir('media');
-        $fileDir = $baseDir.DIRECTORY_SEPARATOR.'StylishEve'.
-            DIRECTORY_SEPARATOR.'OrderActionsButtons'.DIRECTORY_SEPARATOR.'stockmovment';
+        $baseDir  = StylishEve_OrderActionsButtons_Block_Adminhtml_Reportsarchive_Grid::getMediaDir();
+        $fileDir = StylishEve_OrderActionsButtons_Block_Adminhtml_Reportsarchive_Grid::getReportsDir($baseDir);
         $fileDirMode = 0777;
         return $this->_createAndUpdateFileAndUpdateDataIfFileNotExist($baseDir, $fileDir, $fileDirMode, '', '',$pReportContent);
     }

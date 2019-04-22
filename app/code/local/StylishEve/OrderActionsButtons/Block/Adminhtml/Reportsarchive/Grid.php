@@ -47,6 +47,8 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Reportsarchive_Grid extends
         $this->addColumn("report_type", array(
             "header"    => Mage::helper("orderactionsbuttons")->__("Report Type"),
             "index"     => "report_type",
+            "type"      => 'options',
+            "options"   => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportTypes(),
         ));
         $this->addColumn("created_at", array(
             "header"    => Mage::helper("orderactionsbuttons")->__("Created At"),
@@ -62,10 +64,56 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Reportsarchive_Grid extends
         return parent::_prepareColumns();
     }
 
+    /**
+     * get report url
+     *
+     * urlExample: http://127.0.0.1/magento/media/StylishEve/OrderActionsButtons/stockmovment/0umsckqkcd1178k.html
+     *
+     * @param Object $row
+     * @return String OR Boolean
+     */
     public function getRowUrl($row)
     {
-        #TODO:ReportName be clickable to redirect to report
-        // return $this->getUrl("*/adminhtml_agentrewarddetails", array('user_id' => $row->getUser_id()));
-        return false;
+        $_fileDir = self::getReportsDir('media');
+        $_reports = self::getAllReportsName();
+
+        if (in_array($row->getReportName(), $_reports)) {
+            return Mage::getStoreConfig(Mage_Core_Model_Url::XML_PATH_SECURE_URL).$_fileDir.DIRECTORY_SEPARATOR.$row->getReportName();
+        } else{
+            return false;
+        }
+    }
+
+    /**
+     * get All reports in directory
+     *
+     * @return Array
+     */
+    static public function getAllReportsName()
+    {
+        $_baseDir = self::getMediaDir();
+        $_fileDir = self::getReportsDir($_baseDir);
+        return scandir($_fileDir);
+    }
+
+    /**
+     * get media directory
+     *
+     * @return String
+     */
+    static public function getMediaDir()
+    {
+        return Mage::getBaseDir('media');
+    }
+
+    /**
+     * get reports directory
+     *
+     * @return String
+     */
+    static public function getReportsDir($pBaseDir)
+    {
+        return $pBaseDir.DIRECTORY_SEPARATOR.'StylishEve'.
+            DIRECTORY_SEPARATOR.'OrderActionsButtons'.DIRECTORY_SEPARATOR.'stockmovment';
     }
 }
