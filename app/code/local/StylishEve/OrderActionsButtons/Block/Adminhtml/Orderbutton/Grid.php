@@ -151,6 +151,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         $data_array = array();
         $data_array['ChangeStatusForView'] = 'Change Status For View Page';
         $data_array['ChangeStatusForGrid'] = 'Change Status For Grid Page';
+        $data_array['GenerateReport&ChangeStatusForGrid'] = 'Generate Report & Change Status';
         $data_array['GenerateReportForGrid'] = 'Generate Report';
         $data_array['RemoveButtonsFromView'] = 'Remove Buttons From View Page';
         return ($data_array);
@@ -180,6 +181,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
         $data_array = array();
         $data_array['Change Status For View Page'] = 'ChangeStatusForView';
         $data_array['Change Status For Grid Page'] = 'ChangeStatusForGrid';
+        $data_array['Generate Report & Change Status'] = 'GenerateReport&ChangeStatusForGrid';
         $data_array['Generate Report'] = 'GenerateReportForGrid';
         $data_array['Remove Buttons From View Page'] = 'RemoveButtonsFromView';
         return ($data_array);
@@ -366,45 +368,6 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
      *
      * used in edit and add form
      */
-    static public function getReportActionsValueArray()
-    {
-        $data_array = array();
-        $data_array['Display Report Only'] = 'DisplayOnly';
-        $data_array['Display And Save Report'] = 'DisplayAndSave';
-        return ($data_array);
-    }
-
-    /**
-     *
-     * used in edit and add form
-     */
-    static public function getReportActions()
-    {
-        $data_array = array();
-        $data_array['DisplayOnly'] = 'Display Report Only';
-        $data_array['DisplayAndSave'] = 'Display And Save Report';
-        return ($data_array);
-    }
-
-    /**
-     *
-     * used in edit and add form
-     */
-    static public function getReportActionsInForm()
-    {
-        $data_array = array();
-        $data_array[] = ['value' => null, 'label' => 'Select Report Action'];
-        $reportActions = self::getReportActions();
-        foreach ($reportActions as $value => $label) {
-            $data_array[] = array('value' => $value, 'label' => $label);
-        }
-        return ($data_array);
-    }
-
-    /**
-     *
-     * used in edit and add form
-     */
     static public function getReportTypes()
     {
         $data_array = array();
@@ -422,13 +385,12 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid extends Ma
     static public function getReportTypesInForm()
     {
         $data_array = array();
-        $data_array[] = ['value' => null, 'label' => 'Select Report Action'];
-        $reportActions = self::getReportTypes();
-        foreach ($reportActions as $value => $label) {
+        $data_array[] = ['value' => null, 'label' => 'Select Report Type'];
+        $reportTypes = self::getReportTypes();
+        foreach ($reportTypes as $value => $label) {
             $data_array[] = array('value' => $value, 'label' => $label);
         }
         return ($data_array);
-
     }
 
     /**

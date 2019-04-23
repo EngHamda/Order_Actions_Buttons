@@ -72,8 +72,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-warehouse-container').hide();
                                             $('#order-check-delivery-date-container').hide();
                                             
-                                            //hide report-action-container if has class required-entry
-                                            hideContainer('report-action-container', 'report_action');
+                                            //hide report-type-container if has class required-entry
                                             hideContainer('report-type-container', 'report_type');
                                             hideContainer('report-title-container', 'report_title');
                                             
@@ -90,10 +89,26 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-warehouse-container').show();
                                             $('#order-check-delivery-date-container').show();
                                             
-                                            //hide report-action-container if has class required-entry
-                                            hideContainer('report-action-container', 'report_action');
+                                            //hide report-type-container if has class required-entry
                                             hideContainer('report-type-container', 'report_type');
                                             hideContainer('report-title-container', 'report_title');
+                                            
+                                            break;
+                                          case _actions['Generate Report & Change Status']:
+                                            
+                                            //show order-tobe-status-container if not has class required-entry
+                                            showContainer('order-tobe-status-container', 'order_tobe_status', spanElem);
+                                            
+                                            //hide order-removed-buttons-container if has class required-entry
+                                            hideContainer('order-removed-buttons-container', 'order_removed_buttons');
+                                            $('#order-check-tickets-container').hide();
+                                            
+                                            $('#order-check-warehouse-container').show();
+                                            $('#order-check-delivery-date-container').show();
+                                            
+                                            //show report-type-container if not has class required-entry
+                                            showContainer('report-type-container', 'report_type', spanElem);
+                                            showContainer('report-title-container', 'report_title', spanElem);
                                             
                                             break;
                                           case _actions['Remove Buttons From View Page']:
@@ -108,8 +123,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-warehouse-container').hide();
                                             $('#order-check-delivery-date-container').hide();
                                             
-                                            //hide report-action-container if has class required-entry
-                                            hideContainer('report-action-container', 'report_action');
+                                            //hide report-type-container if has class required-entry
                                             hideContainer('report-type-container', 'report_type');
                                             hideContainer('report-title-container', 'report_title');
                                             
@@ -124,10 +138,9 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-tickets-container').hide();
                                             
                                             $('#order-check-warehouse-container').show();
-                                            $('#order-check-delivery-date-container').hide();
+                                            $('#order-check-delivery-date-container').show();
                                             
-                                            //show order-tobe-status-container if not has class required-entry
-                                            showContainer('report-action-container', 'report_action', spanElem);
+                                            //show report-type-container if not has class required-entry
                                             showContainer('report-type-container', 'report_type', spanElem);
                                             showContainer('report-title-container', 'report_title', spanElem);
                                             
@@ -144,8 +157,7 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit extends Ma
                                             $('#order-check-warehouse-container').hide();
                                             $('#order-check-delivery-date-container').hide();
                                             
-                                            //hide report-action-container if has class required-entry
-                                            hideContainer('report-action-container', 'report_action');
+                                            //hide report-type-container if has class required-entry
                                             hideContainer('report-type-container', 'report_type');
                                             hideContainer('report-title-container', 'report_title');
                                             

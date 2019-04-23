@@ -23,7 +23,7 @@ class StylishEve_OrderActionsButtons_Model_Observer
                 $this->removeButtons( $block, array($actions['Remove Buttons From View Page']), 'view');
             } elseif ($block instanceof Mage_Adminhtml_Block_Sales_Order) {
                 $actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
-                $this->displayButtons($block, array($actions['Change Status For Grid Page'], $actions['Generate Report']), 'grid');
+                $this->displayButtons($block, array($actions['Change Status For Grid Page'], $actions['Generate Report & Change Status'], $actions['Generate Report']), 'grid');
             }//endIf check Block
         } catch(Exception $e){
             Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
@@ -115,8 +115,6 @@ class StylishEve_OrderActionsButtons_Model_Observer
 							'admin_orderactionsbuttons/adminhtml_orderbutton/changestatus', 
 							[
 								'order_id' => $pOrderId, 
-								'order_current_status' => $pButtonData->getOrderCurrentStatus(), 
-								'order_tobe_status' => $pButtonData->getOrderTobeStatus(), 
 								'button_id' => $pButtonData->getId()
 							]
 						)}');",
@@ -139,15 +137,21 @@ class StylishEve_OrderActionsButtons_Model_Observer
             return false;
         }//endIF
         $_actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
-        $_requestData = ['order_current_status' => $pButtonData->getOrderCurrentStatus(), 'button_id' =>$pButtonData->getId() ];
+        $_requestData = ['button_id' =>$pButtonData->getId() ];
         $_urlRequest = 'admin_orderactionsbuttons/adminhtml_orderbutton/';
 
         //check if actionType is change status OR generate report
         switch ($pButtonData->getActionType()):
+            case $_actions['Generate Report & Change Status']:
+                $_urlAction = 'changestatus';
+                $block->addButton('btn_' . $pButtonData->getName(), array(
+                    'label' => Mage::helper('core')->__($pButtonData->getName()),
+                    'onclick' => "window.open('{$block->getUrl($_urlRequest.$_urlAction, $_requestData)}');",
+                    'class' => $pButtonData->getCssClasses(),//change color and change icon
+                ));
+                break;
             case $_actions['Change Status For Grid Page']:
                 $_urlAction = 'changestatus';
-                $_requestData['order_tobe_status'] = $pButtonData->getOrderTobeStatus();
-
                 $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                     ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $pButtonData->getOrderTobeStatus()])
                     ->getFirstItem()->getLabel();

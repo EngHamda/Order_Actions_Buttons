@@ -152,6 +152,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
      */
     public function _prepareButtonDataBeforeSave(&$pButtonData)
     {
+        $actionTypes = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
         $pButtonData['order_current_status'] = implode(",", $pButtonData['order_current_status']);
         $pButtonData['accepted_role'] = implode(",", $pButtonData['accepted_role']);
         if(array_key_exists('order_removed_buttons', $pButtonData)){
@@ -167,7 +168,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         $pButtonData['check_warehouse'] = (array_key_exists('check_warehouse', $pButtonData))?$pButtonData['check_warehouse']:'0';
         $pButtonData['check_delivery_date'] = (array_key_exists('check_delivery_date', $pButtonData))?$pButtonData['check_delivery_date']:'0';
 
-        if($pButtonData['action_type'] == StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray()['Generate Report']){
+        if(in_array($pButtonData['action_type'],[$actionTypes['Generate Report & Change Status'], $actionTypes['Generate Report']])){
             $pButtonData['report_attrs'] = json_encode($pButtonData['report_attrs']);
         } else{
             if(array_key_exists('report_attrs', $pButtonData)){
@@ -244,8 +245,10 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     {
         try {
             $count = 1;
-            $tobeStatus = $this->getRequest()->getParam('order_tobe_status');
-            $currentStatus = $this->getRequest()->getParam('order_current_status');
+            $btnId = $this->getRequest()->getParam('button_id');
+            $btnData = Mage::getSingleton('orderactionsbuttons/orderbutton')->load($btnId);
+            $tobeStatus = $btnData->getOrderTobeStatus();
+            $currentStatus = $btnData->getOrderCurrentStatus();
             $currentStatuses = explode(',', $currentStatus);
             $tobeStatusName = Mage::getSingleton('sales/order_status')->getCollection()
                 ->addFieldToSelect('label')->addFieldToFilter('status', ['eq' => $tobeStatus])->getFirstItem()->getLabel();
@@ -266,15 +269,64 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             } else {
                 $count = 0;
                 $roleId = $_userInfo['roleId'];
-                $btnId = $this->getRequest()->getParam('button_id');
-                $btnData = Mage::getSingleton('orderactionsbuttons/orderbutton')->load($btnId);
                 $_orders = Mage::getModel('sales/order')->getCollection();
                 $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
-                $result = $this->_prepareSelectOrdersQueryForChangeStatus($_orders, $btnData, $roleId);
-                if(!$result){
-                    $this->_redirect($redirectUrl, $redirectData);
-                    return ;
-                }
+                /* switch change status OR change status & generate report*/
+                $_actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
+                switch ($btnData->getActionType()):
+                    case $_actions['Generate Report & Change Status']:
+                        $result = $this->_prepareSelectOrdersQueryForGenerateReport($_orders, $btnData, $roleId);
+                        if(!$result){
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        if ($_orders->getSize() == 0) {
+                            Mage::getSingleton("adminhtml/session")->addSuccess(
+                                Mage::helper("adminhtml")->__("No Orders need to change status")
+                            );
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        $result = $this->_getReport($_orders, $btnData);
+                        if($result['error'] || !array_key_exists('reportNo', $result)){
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        $reportContent = $result['reportContent'];
+                        $reportNo = $result['reportNo'];
+                        $result = $this->_generateReport($reportContent);
+                        if($result['error']){
+                            Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        $reportFileName = $result['filePath'];
+                        $reportType = json_decode($btnData->getReportAttrs(),true)['report_type'];
+                        //save report path to archive
+                        $reportArchiveData = ['report_number'=>$reportNo, 'report_name'=> pathinfo($reportFileName)['basename'], 'report_type'=>$reportType];
+                        $result = $this->_saveReportToArchive($reportArchiveData);
+                        if($result['error']){
+                            Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        $result = $this->_updateReportIdInFile($reportNo);
+                        if($result['error']){
+                            Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        $_orders->addFieldToSelect(['status', 'entity_id']);
+                        $_orders->getSelect()->group('main_table.entity_id');
+                        break;
+                    case $_actions['Change Status For Grid Page']:
+                        $result = $this->_prepareSelectOrdersQueryForChangeStatus($_orders, $btnData, $roleId);
+                        if(!$result){
+                            $this->_redirect($redirectUrl, $redirectData);
+                            return ;
+                        }
+                        break;
+                endswitch;
                 if ($_orders->getSize() == 0) {
                     Mage::getSingleton("adminhtml/session")->addSuccess(
                         Mage::helper("adminhtml")->__("No Orders need to change status")
@@ -290,6 +342,14 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     }
                     $count++;
                 }//endForeach
+                /* print report*/
+                switch ($btnData->getActionType()):
+                    case $_actions['Generate Report & Change Status']:
+                        echo  $reportContent;
+                        return ;
+                    case $_actions['Change Status For Grid Page']:
+                        break;
+                endswitch;
             }
             Mage::getSingleton("adminhtml/session")->addSuccess(Mage::helper("adminhtml")->__($count." Order".(($count > 1) ? 's' : '')." Updated Successfully"));
             $this->_redirect($redirectUrl, $redirectData);
@@ -537,22 +597,19 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
      */
     public function generateReportAction()
     {
-        /*########################################################*/
         try {
             //userInfo
             $_userInfo = $this->_getUserInfo();
             $roleId = $_userInfo['roleId'];
-            $currentStatus = $this->getRequest()->getParam('order_current_status');
-            $currentStatuses = explode(",", $currentStatus);
             $btnId = $this->getRequest()->getParam('button_id');
             $btnData = Mage::getSingleton('orderactionsbuttons/orderbutton')->load($btnId);
+            $currentStatus = $btnData->getOrderCurrentStatus();
+            $currentStatuses = explode(",", $currentStatus);
 
             $_orders = Mage::getSingleton('sales/order')->getCollection();
             $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
 
-            $reportAction = json_decode($btnData->getReportAttrs(),true)['report_action'];
-            $reportActions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportActionsValueArray();
-            $result = $this->_prepareOrdersQuery($_orders, $btnData, $roleId);
+            $result = $this->_prepareSelectOrdersQueryForGenerateReport($_orders, $btnData, $roleId);
             if(!$result){
                 $this->_redirect('adminhtml/sales_order/', []);
                 return ;
@@ -562,45 +619,12 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 $this->_redirect('adminhtml/sales_order/', []);
                 return ;
             }
-            /* start */
             $result = $this->_getReport($_orders, $btnData);
             if($result['error'] || !array_key_exists('reportNo', $result)){
                 $this->_redirect('adminhtml/sales_order/', []);
                 return ;
             }
             $reportContent = $result['reportContent'];
-            /*depend on action */
-            switch ($reportAction):
-                case $reportActions['Display And Save Report']:
-                    $reportNo = $result['reportNo'];
-                    $result = $this->_generateReport($reportContent);
-                    if($result['error']){
-                        Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
-                        $this->_redirect('adminhtml/sales_order/', []);
-                        return ;
-                    }
-                    $reportFileName = $result['filePath'];
-                    $reportType = json_decode($btnData->getReportAttrs(),true)['report_type'];
-                    //save report path to archive
-                    $reportArchiveData = ['report_number'=>$reportNo, 'report_name'=> pathinfo($reportFileName)['basename'], 'report_type'=>$reportType];
-                    $result = $this->_saveReportToArchive($reportArchiveData);
-                    if($result['error']){
-                        Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
-                        $this->_redirect('adminhtml/sales_order/', []);
-                        return ;
-                    }
-                    $result = $this->_updateReportIdInFile($reportNo);
-                    if($result['error']){
-                        Mage::getSingleton("adminhtml/session")->addError(Mage::helper("adminhtml")->__($result['msg']));
-                        $this->_redirect('adminhtml/sales_order/', []);
-                        return ;
-                    }
-                    break;
-                case $reportActions['Display Report Only']:
-                    break;
-            endswitch;
-            /*depend on action */
-            /* end */
             echo $reportContent;
         } catch (Exception $e) {
             Mage::helper('orderactionsbuttons')->logException('OrderActionsButtons.log',
@@ -612,7 +636,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     /**
      *
      */
-    public function _prepareOrdersQuery(&$pOrdersModel, $pBtnData, $pRoleId)
+    public function _prepareSelectOrdersQueryForGenerateReport(&$pOrdersModel, $pBtnData, $pRoleId)
     {
         $pOrdersModel->getSelect()->reset(Zend_Db_Select::COLUMNS)->columns(
             ['increment_id', 'order_currency_code', 'grand_total']
@@ -649,6 +673,11 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 ['parent_row_total'=>'parent.row_total', 'parent_discount_amount'=>'parent.discount_amount']
             );
         }//endIF
+        if($pBtnData->getCheckDeliveryDate()){
+            $pOrdersModel->getSelect()->join(
+                ['aad' => 'amasty_amdeliverydate_deliverydate'], 'aad.order_id = `main_table`.entity_id', ['date']
+            )->where("aad.date = '0000-00-00' OR CURDATE() >= aad.date OR CURDATE()+5 >= aad.date ");
+        }
         return true;
     }
 

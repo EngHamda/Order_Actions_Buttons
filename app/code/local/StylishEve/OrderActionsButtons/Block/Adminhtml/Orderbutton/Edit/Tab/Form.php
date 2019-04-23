@@ -73,29 +73,28 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
             ));
 
             $model  = Mage::registry('orderbutton_data');
+            if(is_string($model->getReportAttrs())){
+                //from db
+                $reportAttrs = json_decode(html_entity_decode($model->getReportAttrs()),true);
+            } elseif (is_array($model->getReportAttrs())){
+                //from session
+                $reportAttrs = $model->getReportAttrs();
+            }
             /**/
             #TODO: add reportNumber "text,readOnly" "last report id OR default id "
-            $fieldset->addField('report_action', 'select', array(
-                "label" => Mage::helper('orderactionsbuttons')->__('Report Action'),
-                "values" => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportActionsInForm(),
-                "required" => true,
-                "name" => 'report_attrs[report_action]',
-                "value" => $model->getReportAttrs()['report_action'],
-                "container_id" =>"report-action-container",
-            ));
             $fieldset->addField('report_type', 'select', array(
                 "label" => Mage::helper('orderactionsbuttons')->__('Report Type'),
                 "values" => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportTypesInForm(),
                 "required" => true,
                 "name" => 'report_attrs[report_type]',
-                "value" => $model->getReportAttrs()['report_type'],
+                "value" => $reportAttrs['report_type'],
                 "container_id" =>"report-type-container",
             ));
             $fieldset->addField('report_title', 'text', array(
                 "label" => Mage::helper('orderactionsbuttons')->__('Report Title'),
                 "required" => true,
                 "name" => 'report_attrs[report_title]',
-                "value" => $model->getReportAttrs()['report_title'],
+                "value" => $reportAttrs['report_title'],
                 "container_id" =>"report-title-container",
             ));
             /**/
