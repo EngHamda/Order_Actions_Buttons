@@ -401,7 +401,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     {
         //check currentStatus
         if(!in_array($pOrderObj->getStatus(), $pCurrentStatuses)){
-            Mage::getSingleton("adminhtml/session")->addError("Order Current Status is $pOrderObj->getStatus() ");
+            Mage::getSingleton("adminhtml/session")->addError("Order Current Status is ".$pOrderObj->getStatus() );
             return false;
         }
         switch ($pTobeStatus):
