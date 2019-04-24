@@ -269,12 +269,13 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
             } else {
                 $count = 0;
                 $roleId = $_userInfo['roleId'];
-                $_orders = Mage::getModel('sales/order')->getCollection();
-                $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
-                /* switch change status OR change status & generate report*/
+                /* switch actions to do additional action before change orders status ex: generate report*/
                 $_actions = StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getActionTypeValueArray();
                 switch ($btnData->getActionType()):
                     case $_actions['Generate Report & Change Status']:
+                        /* do additional action "generate report" before change orders status*/
+                        $_orders = Mage::getSingleton('sales/order')->getCollection();
+                        $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
                         $result = $this->_prepareSelectOrdersQueryForGenerateReport($_orders, $btnData, $roleId);
                         if(!$result){
                             $this->_redirect($redirectUrl, $redirectData);
@@ -316,17 +317,14 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                             $this->_redirect($redirectUrl, $redirectData);
                             return ;
                         }
-                        $_orders->addFieldToSelect(['status', 'entity_id']);
-                        $_orders->getSelect()->group('main_table.entity_id');
-                        break;
-                    case $_actions['Change Status For Grid Page']:
-                        $result = $this->_prepareSelectOrdersQueryForChangeStatus($_orders, $btnData, $roleId);
-                        if(!$result){
-                            $this->_redirect($redirectUrl, $redirectData);
-                            return ;
-                        }
-                        break;
                 endswitch;
+                $_orders = Mage::getSingleton('sales/order')->getCollection();
+                $_orders->addFieldToFilter('status', ['in'=> $currentStatuses]);
+                $result = $this->_prepareSelectOrdersQueryForChangeStatus($_orders, $btnData, $roleId);
+                if(!$result){
+                    $this->_redirect($redirectUrl, $redirectData);
+                    return ;
+                }
                 if ($_orders->getSize() == 0) {
                     Mage::getSingleton("adminhtml/session")->addSuccess(
                         Mage::helper("adminhtml")->__("No Orders need to change status")
