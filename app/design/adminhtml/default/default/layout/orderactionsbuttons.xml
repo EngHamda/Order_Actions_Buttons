@@ -1,8 +1,13 @@
 <?xml version="1.0"?>
 <layout version="0.1.0">
-  <orderactionsbuttons_adminhtml_orderbutton_index>
-	<reference name="content">
-	  <block type="orderactionsbuttons/adminhtml_orderbutton" name="orderbutton" />
-	</reference>
-  </orderactionsbuttons_adminhtml_orderbutton_index>
+    <orderactionsbuttons_adminhtml_orderbutton_index>
+        <reference name="content">
+            <block type="orderactionsbuttons/adminhtml_orderbutton" name="orderbutton"/>
+        </reference>
+    </orderactionsbuttons_adminhtml_orderbutton_index>
+    <orderactionsbuttons_adminhtml_orderbutton_reportsarchive>
+        <reference name="content">
+            <block type="orderactionsbuttons/adminhtml_reportsarchive" name="reportsarchive"/>
+        </reference>
+    </orderactionsbuttons_adminhtml_orderbutton_reportsarchive>
 </layout>
