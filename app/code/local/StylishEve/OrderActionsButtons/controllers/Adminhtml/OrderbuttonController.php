@@ -558,7 +558,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
      */
     public function _prepareSelectOrdersQueryForChangeStatus(&$pOrdersModel, $pBtnData, $pRoleId)
     {
-        $pOrdersModel->addFieldToSelect(['status', 'entity_id']);
+        $pOrdersModel->addFieldToSelect(['status', 'entity_id', 'increment_id']);
         if($pBtnData->getCheckWarehouse()){
             if(!Mage::helper('core')->isModuleEnabled('MDN_AdvancedStock')){
                 Mage::getSingleton("adminhtml/session")->addError("Note: MDN_AdvancedStock Module is DISABLED");
