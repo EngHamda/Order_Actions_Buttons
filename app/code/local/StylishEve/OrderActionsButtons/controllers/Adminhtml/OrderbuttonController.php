@@ -717,20 +717,15 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
         foreach ($pOrdersModel as $_order) {
             if (array_key_exists($_order->getSku(), $_skus)) {
                 $_skus[$_order->getSku()] = floatval($_skus[$_order->getSku()]) + floatval($_order->getQtyOrdered());
-                $pItemsArray[$_order->getSku()] = [
-                    'name' => $_order->getName(),
-                    'sku' => $_order->getSku(),
-                    'qty' => floatval($_skus[$_order->getSku()]) + floatval($_order->getQtyOrdered())
-                ];
             } else {
                 $_skus[$_order->getSku()] = floatval($_order->getQtyOrdered());
-                $pItemsArray[$_order->getSku()] = [
-                    'name' => $_order->getName(),
-                    'sku' => $_order->getSku(),
-                    'qty' => floatval($_order->getQtyOrdered())
-                ];
-
             }
+
+            $pItemsArray[$_order->getSku()] = [
+                'name' => $_order->getName(),
+                'sku' => $_order->getSku(),
+                'qty' => $_skus[$_order->getSku()]
+            ];
 
             $pOrdersArray[$_order->getIncrementId()][] = [
                 'color' => $_order->getName(),
@@ -981,14 +976,16 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     {
         $reportContent = "";
         $itemsTotalQty = 0;
-        foreach ($pItemsArray as $i => $_item) {
-            $reportContent .= "<tr>";
-            $reportContent .= "<td class=\"no\">" . ($i + 1) . "</td>";
-            $reportContent .= "<td class=\"desc\">" . $_item['name'] . "</td>";
-            $reportContent .= "<td class=\"unit\">" . $_item['sku'] . "</td>";
-            $reportContent .= "<td class=\"qty\">" . $_item['qty'] . "</td>";
-            $reportContent .= "</tr>";
+        $_i = 0;
+        foreach($pItemsArray as $i=>$_item){
+            $reportContent .=   "<tr>";
+            $reportContent .=       "<td class=\"no\">".($_i + 1)."</td>";
+            $reportContent .=       "<td class=\"desc\">".$_item['name']."</td>";
+            $reportContent .=       "<td class=\"unit\">".$_item['sku']."</td>";
+            $reportContent .=       "<td class=\"qty\">".$_item['qty']."</td>";
+            $reportContent .=   "</tr>";
             $itemsTotalQty += $_item['qty'];
+            $_i++;
         }
         $reportContent .= "<tfoot><tr><td></td><td></td><td><b>Total Quantity:</b></td><td><b>" . $itemsTotalQty . "</b></td></tr></tfoot>";
         return $reportContent;
