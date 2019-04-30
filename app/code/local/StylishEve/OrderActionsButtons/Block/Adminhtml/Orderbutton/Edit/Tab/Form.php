@@ -79,6 +79,8 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
             } elseif (is_array($model->getReportAttrs())){
                 //from session
                 $reportAttrs = $model->getReportAttrs();
+            } else{
+                $reportAttrs = $model->getReportAttrs();
             }
             /**/
             #TODO: add reportNumber "text,readOnly" "last report id OR default id "
@@ -87,14 +89,14 @@ class StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Edit_Tab_Form e
                 "values" => StylishEve_OrderActionsButtons_Block_Adminhtml_Orderbutton_Grid::getReportTypesInForm(),
                 "required" => true,
                 "name" => 'report_attrs[report_type]',
-                "value" => $reportAttrs['report_type'],
+                "value" => !empty($reportAttrs)?$reportAttrs['report_type']: null,
                 "container_id" =>"report-type-container",
             ));
             $fieldset->addField('report_title', 'text', array(
                 "label" => Mage::helper('orderactionsbuttons')->__('Report Title'),
                 "required" => true,
                 "name" => 'report_attrs[report_title]',
-                "value" => $reportAttrs['report_title'],
+                "value" => !empty($reportAttrs)?$reportAttrs['report_title']: null,
                 "container_id" =>"report-title-container",
             ));
             /**/
