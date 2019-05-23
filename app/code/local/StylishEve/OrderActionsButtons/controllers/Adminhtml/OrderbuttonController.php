@@ -488,7 +488,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     {
         if ($pOrderObj->canInvoice()) {
             //START Handle Invoice
-            $invoice = Mage::getSingleton('sales/service_order', $pOrderObj)->prepareInvoice();
+            $invoice = Mage::getModel('sales/service_order', $pOrderObj)->prepareInvoice();
             $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
             $invoice->register();
             $invoice->getOrder()->setCustomerNoteNotify(false);
