@@ -509,6 +509,8 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     {
         $orderHasItemWithoutSerial = false;
         foreach ($pOrderObj->getAllItems() as $item) {
+            if($item->getProductType() != "simple")
+                continue;
             $orderItem = $item;
             $orderedQty = $orderItem->getQtyOrdered();
             $itemId = $orderItem->getItemId();
