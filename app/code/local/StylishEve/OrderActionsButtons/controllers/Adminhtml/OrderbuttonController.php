@@ -424,7 +424,6 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                 // (paid {'Administrators', 'Storekeepers'} {completecashAction}),
                 // (pending_cfo_approval, pos {'Administrators', 'CFO', 'Accountant'})
                 // (cash {'Administrators', 'CFO', 'Accountant'} {paidAction})
-                $this->_handleInvoice($pOrderObj);
                 if (in_array("cash", $pCurrentStatuses)) {
                     if (!$this->_checkOrderHasItemWithoutSerial($pOrderObj)) {
                         $this->_addShipmentToOrder($pOrderObj);
@@ -441,6 +440,7 @@ class StylishEve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
                     Mage::getSingleton("adminhtml/session")->addError("Order Current Status is $pOrderObj->getStatus(), Order Status Couldn't change to $pTobeStatusName");
                     return false;
                 }
+                $this->_handleInvoice($pOrderObj);
                 break;
             default:
                 $this->_setTobeStatusAndAddComment($pOrderObj, $pTobeStatus, $pTobeStatusName, $pUserName);
