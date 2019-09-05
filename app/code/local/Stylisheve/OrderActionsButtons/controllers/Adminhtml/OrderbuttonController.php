@@ -1026,8 +1026,8 @@ class Stylisheve_OrderActionsButtons_Adminhtml_OrderbuttonController extends Mag
     public function _getReportHtmlAfterReplaceString($pReportHtmlContent, $pReportOrdersTable, $pReportNo, $pOrdersCount)
     {
         $reportDate = date("d/m/y");
-        $reportLogoURL = "https://www.hapilin.com/media/hapilin/images/email_logo.png";
-        $reportSupportEmail = 'support@hapilin.com';
+        $reportLogoURL = "https://www.stylisheve.com/wp-content/uploads/2017/01/logo-1.png";
+        $reportSupportEmail = 'support@stylisheve.com';
         $reportOrdersOutput = str_replace("###replace###", $pReportOrdersTable, $pReportHtmlContent);
         $reportOrdersOutput = str_replace("###reportNo###", $pReportNo, $reportOrdersOutput);
         $reportOrdersOutput = str_replace("###NoOrders###", $pOrdersCount, $reportOrdersOutput);
