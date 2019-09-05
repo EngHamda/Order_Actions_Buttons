@@ -9,7 +9,7 @@ class Stylisheve_OrderActionsButtons_Block_Adminhtml_Reportsarchive extends Mage
 
          $this->_controller = "adminhtml_orderbutton";
          $this->_blockGroup = "orderactionsbuttons";
-         $this->_headerText = Mage::helper("orderactionsbuttons")->__("Reportsarchive Manager");
+         $this->_headerText = Mage::helper("orderactionsbuttons")->__("Reports Archive Manager");
          /**
           * Note:
           *  replace
